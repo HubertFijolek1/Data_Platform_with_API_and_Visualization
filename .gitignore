@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.class
+venv/
+ENV/
+env/
+.venv/
+*.log
+docker-compose.override.yml
+.env
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
