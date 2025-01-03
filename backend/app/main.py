@@ -1,7 +1,6 @@
 from fastapi import FastAPI
+from .routers import auth
 
 app = FastAPI()
 
-@app.get('/')
-def read_root():
-    return {'message': 'Welcome to the Data Analysis Platform'}
+app.include_router(auth.router)
