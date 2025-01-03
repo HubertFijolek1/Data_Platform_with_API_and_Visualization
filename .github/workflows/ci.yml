@@ -40,6 +40,18 @@ jobs:
         pip install --upgrade pip
         pip install -r backend/requirements.txt
 
+    - name: Lint with flake8
+      run: |
+        source venv/bin/activate
+        pip install flake8
+        flake8 backend/app/
+
+    - name: Format with black
+      run: |
+        source venv/bin/activate
+        pip install black
+        black --check backend/app/
+
     - name: Run tests
       env:
         DATABASE_URL: postgresql://postgres:password@localhost:5432/data_db
