@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
 
 SECRET_KEY = "my_secret_key"
-ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 router = APIRouter(
@@ -62,7 +61,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=schemas.Token)
 def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
-    if not db_user or not crud.pwd_context.verify(user.password, db_user.hashed_password):
+    if not db_user or not crud.verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access_token = create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
