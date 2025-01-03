@@ -50,3 +50,36 @@ def test_register_user():
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Username already taken"
+
+def test_login_user():
+    # Najpierw zarejestruj użytkownika
+    response = client.post(
+        "/auth/register",
+        json={"username": "loginuser", "email": "login@example.com", "password": "loginpassword"}
+    )
+    assert response.status_code == 200
+
+    # Poprawne logowanie
+    response = client.post(
+        "/auth/login",
+        json={"username": "loginuser", "email": "login@example.com", "password": "loginpassword"}
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
+
+    # Logowanie z błędnym hasłem
+    response = client.post(
+        "/auth/login",
+        json={"username": "loginuser", "email": "login@example.com", "password": "wrongpassword"}
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid credentials"
+
+    # Logowanie z nieistniejącym użytkownikiem
+    response = client.post(
+        "/auth/login",
+        json={"username": "nonuser", "email": "non@example.com", "password": "nopassword"}
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid credentials"
