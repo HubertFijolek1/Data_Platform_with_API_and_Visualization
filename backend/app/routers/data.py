@@ -105,3 +105,35 @@ def get_dataset(
             detail=f"Dataset with id {dataset_id} not found."
         )
     return dataset
+
+@router.delete(
+    "/{dataset_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a dataset by ID",
+    description="Delete a specific dataset by its ID (admin only)."
+)
+def delete_dataset(
+    dataset_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    # Only admins can delete
+    admin_only: bool = Depends(RoleChecker(["admin"])),
+):
+    """
+    Delete a dataset by its ID. Only users with the 'admin' role can perform this operation.
+    """
+    dataset = db.query(models.Dataset).filter(models.Dataset.id == dataset_id).first()
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dataset with id {dataset_id} not found."
+        )
+
+    # IT also remove the file from disk if it exists:
+    file_path = os.path.join("uploads", dataset.file_name)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    db.delete(dataset)
+    db.commit()
+    return  # 204 No Content means success without response body
