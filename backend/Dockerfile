@@ -10,4 +10,6 @@ COPY . .
 
 EXPOSE 8000
 
+RUN mkdir -p saved_models  # ensures directory for model storage
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

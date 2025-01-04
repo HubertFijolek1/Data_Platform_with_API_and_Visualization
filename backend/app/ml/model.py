@@ -2,6 +2,8 @@ import tensorflow as tf
 from tensorflow import keras
 import pandas as pd
 from .preprocessing import preprocess_data
+import os
+
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
@@ -40,6 +42,7 @@ def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.M
 
     return model
 
+
 def evaluate_model(model: keras.Model, df: pd.DataFrame, label_column: str):
     """
     Evaluate a trained Keras model on a dataset.
@@ -61,3 +64,13 @@ def evaluate_model(model: keras.Model, df: pd.DataFrame, label_column: str):
         "precision": prec,
         "recall": rec
     }
+
+def save_model(model: keras.Model, model_name: str):
+    """
+    Save a trained Keras model to disk in the 'saved_models' directory.
+    Model is saved in TensorFlow SavedModel format.
+    """
+    os.makedirs("saved_models", exist_ok=True)
+    path = os.path.join("saved_models", model_name)
+    model.save(path)
+    return path
