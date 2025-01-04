@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
+
 
 class UserCreate(BaseModel):
     username: str
@@ -20,3 +22,15 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[EmailStr] = None
+
+class DatasetCreate(BaseModel):
+    name: str
+
+class DatasetRead(BaseModel):
+    id: int
+    name: str
+    file_name: str
+    uploaded_at: datetime
+
+    class Config:
+        orm_mode = True
