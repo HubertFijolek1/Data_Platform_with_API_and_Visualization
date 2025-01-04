@@ -4,6 +4,10 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .utils.rate_limiter import limiter
+from slowapi.errors import RateLimitExceeded
+from fastapi.responses import PlainTextResponse
+
 from .routers import auth, data
 from .middlewares import error_handling_middleware
 from .utils.rate_limiter import limiter
@@ -57,3 +61,7 @@ def test_logging():
     logger.info("Testing INFO log level.")
     logger.debug("Testing DEBUG log level.")
     return {"message": "Logs have been written to console or file."}
+
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_exceeded_handler(request, exc):
+    return PlainTextResponse(str(exc), status_code=429)

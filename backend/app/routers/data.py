@@ -10,6 +10,9 @@ from ..database import SessionLocal
 from ..routers.auth import get_current_user
 from ..utils.role_checker import RoleChecker
 
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from ..utils.rate_limiter import limiter
 router = APIRouter(
     prefix="/data",
     tags=["data"],
@@ -137,3 +140,8 @@ def delete_dataset(
     db.delete(dataset)
     db.commit()
     return  # 204 No Content means success without response body
+
+@router.get("/limited")
+@limiter.limit("5/minute")  # only 5 calls allowed per minute for this endpoint
+def limited_endpoint():
+    return {"message": "Rate-limited endpoint"}
