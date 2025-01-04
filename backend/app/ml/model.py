@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow import keras
 import pandas as pd
 from .preprocessing import preprocess_data
-
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
     """
@@ -39,3 +39,25 @@ def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.M
     model.fit(X, y, epochs=epochs, batch_size=32, verbose=1)
 
     return model
+
+def evaluate_model(model: keras.Model, df: pd.DataFrame, label_column: str):
+    """
+    Evaluate a trained Keras model on a dataset.
+    Returns a dictionary of metrics: accuracy, precision, recall
+    """
+    df = preprocess_data(df)
+    y_true = df[label_column].values
+    X = df.drop(columns=[label_column]).values
+    y_pred_probs = model.predict(X)
+    # For binary classification, threshold=0.5
+    y_pred = (y_pred_probs >= 0.5).astype(int)
+
+    acc = accuracy_score(y_true, y_pred)
+    prec = precision_score(y_true, y_pred, zero_division=0)
+    rec = recall_score(y_true, y_pred, zero_division=0)
+
+    return {
+        "accuracy": acc,
+        "precision": prec,
+        "recall": rec
+    }
