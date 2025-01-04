@@ -13,6 +13,8 @@ from ..utils.role_checker import RoleChecker
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from ..utils.rate_limiter import limiter
+
+from .app.ml.model import train_model, save_model
 router = APIRouter(
     prefix="/data",
     tags=["data"],
@@ -36,6 +38,8 @@ def upload_dataset(
     file: UploadFile = File(...),  # The actual data file
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),  # Requires login
+    train: bool = Form(False),
+    label_column: str = Form(None)
 ):
     """
     Endpoint to upload a dataset file and store relevant metadata in the DB.
@@ -64,6 +68,19 @@ def upload_dataset(
     db.add(dataset)
     db.commit()
     db.refresh(dataset)
+
+    # If train is True, automatically load CSV into memory, train model, and save
+    if train:
+        if not label_column:
+            raise HTTPException(
+                            status_code=400,
+                        detail = "label_column is required when train=True."
+                                              )
+        import pandas as pd
+        file_df = pd.read_csv(file_location)  # For simplicity
+        model = train_model(file_df, label_column=label_column, epochs=5)
+        model_name = f"{name}_model"
+        save_model(model, model_name)
 
     return dataset
 
