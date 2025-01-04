@@ -2,12 +2,13 @@ import os
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Query
 from sqlalchemy.orm import Session
 
 from .. import schemas, models
 from ..database import SessionLocal
 from ..routers.auth import get_current_user
+from ..utils.role_checker import RoleChecker
 
 router = APIRouter(
     prefix="/data",
@@ -21,7 +22,12 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/upload", response_model=schemas.DatasetRead)
+@router.post(
+    "/upload",
+    response_model=schemas.DatasetRead,
+    summary="Upload a dataset file",
+    description="Upload a CSV or TXT file and store metadata in the database."
+)
 def upload_dataset(
     name: str = Form(...),  # Part of normal form data
     file: UploadFile = File(...),  # The actual data file
@@ -32,26 +38,22 @@ def upload_dataset(
     Endpoint to upload a dataset file and store relevant metadata in the DB.
     """
 
-    # Validate file extension (basic example)
     if not file.filename.lower().endswith(('.csv', '.txt')):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only CSV or TXT files are allowed."
         )
 
-    # Generate a unique file name to store it on disk (optional strategy)
     unique_id = str(uuid.uuid4())
     file_extension = os.path.splitext(file.filename)[1]
     file_name = f"{unique_id}{file_extension}"
 
-    # Save file to a local 'uploads' directory (you can choose a different path)
     os.makedirs("uploads", exist_ok=True)
     file_location = os.path.join("uploads", file_name)
 
     with open(file_location, "wb") as f:
         f.write(file.file.read())
 
-    # Create a new Dataset record in the DB
     dataset = models.Dataset(
         name=name,
         file_name=file_name
@@ -60,20 +62,34 @@ def upload_dataset(
     db.commit()
     db.refresh(dataset)
 
-    return dataset  # FastAPI will convert this to DatasetRead
+    return dataset
 
-@router.get("/", response_model=List[schemas.DatasetRead])
+
+@router.get(
+    "/",
+    response_model=List[schemas.DatasetRead],
+    summary="List all datasets (paginated)",
+    description="Retrieve a paginated list of datasets."
+)
 def get_all_datasets(
+    page: int = Query(1, ge=1, description="Page number (starts at 1)"),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     """
-    Retrieve a list of all uploaded datasets.
+    Retrieve a paginated list of datasets.
     """
-    datasets = db.query(models.Dataset).all()
+    skip = (page - 1) * page_size
+    datasets = db.query(models.Dataset).offset(skip).limit(page_size).all()
     return datasets
 
-@router.get("/{dataset_id}", response_model=schemas.DatasetRead)
+@router.get(
+    "/{dataset_id}",
+    response_model=schemas.DatasetRead,
+    summary="Get dataset by ID",
+    description="Retrieve a specific dataset by its ID."
+)
 def get_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
