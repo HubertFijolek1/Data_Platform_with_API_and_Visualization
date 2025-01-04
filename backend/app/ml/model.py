@@ -74,3 +74,12 @@ def save_model(model: keras.Model, model_name: str):
     path = os.path.join("saved_models", model_name)
     model.save(path)
     return path
+
+def load_model(model_name: str) -> keras.Model:
+    """
+    Load a saved Keras model from disk by name. Returns None if not found.
+    """
+    model_path = os.path.join("saved_models", model_name)
+    if not os.path.exists(model_path):
+        return None
+    return keras.models.load_model(model_path)

@@ -8,7 +8,7 @@ from .utils.rate_limiter import limiter
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import PlainTextResponse
 
-from .routers import auth, data
+from .routers import auth, data, predict
 from .middlewares import error_handling_middleware
 from .utils.rate_limiter import limiter
 
@@ -54,6 +54,7 @@ app.add_middleware(limiter._middleware_class, limiter=limiter)
 
 app.include_router(auth.router)
 app.include_router(data.router)
+app.include_router(predict.router)
 
 # Example usage in routes (pseudocode):
 @app.get("/test-logging")
