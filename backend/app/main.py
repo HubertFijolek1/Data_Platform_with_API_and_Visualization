@@ -26,6 +26,22 @@ This API allows you to manage and analyze datasets.
     version="1.0.0",
 )
 
+# CORS configuration
+origins = [
+    "http://localhost:3000",
+    "http://localhost:8501",
+    "https://my-frontend-domain.com",
+    # etc.
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Register the custom error-handling middleware
 app.middleware("http")(error_handling_middleware)
 
