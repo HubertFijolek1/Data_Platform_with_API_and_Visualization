@@ -1,21 +1,22 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+#from pydantic import BaseModel
 import pandas as pd
 
-from app.ml.model import load_model
-from typing import List, Union
+from ..ml.model import load_model
+#from typing import List, Union
 
+from ..schemas_ml import PredictionRequest, PredictionResponse
 router = APIRouter(
     prefix="/predict",
     tags=["predict"]
 )
 
-class PredictionInput(BaseModel):
-    data: List[dict]  # Each dict is a row of input data
-    model_name: str
+#class PredictionInput(BaseModel):
+#    data: List[dict]  # Each dict is a row of input data
+#    model_name: str
 
-@router.post("/")
-def predict(input_data: PredictionInput):
+@router.post("/", response_model=PredictionResponse)
+def predict(input_data: PredictionRequest):
     """
     Predict endpoint:
     - Loads a saved Keras model by model_name
@@ -30,6 +31,9 @@ def predict(input_data: PredictionInput):
 
     # Convert list-of-dicts to a DataFrame
     df = pd.DataFrame(input_data.data)
+    # Convert List[RowData] to a list of dicts, then to a DataFrame
+    row_dicts = [row.dict() for row in input_data.data]
+    df = pd.DataFrame(row_dicts)
 
     # If the DataFrame is empty or has no columns, return error
     if df.empty:
@@ -46,7 +50,7 @@ def predict(input_data: PredictionInput):
     # Flatten probabilities to normal Python list of floats
     y_pred_probs_list = y_pred_probs.flatten().tolist()
 
-    return {
-        "predictions": y_pred_labels,
-        "probabilities": y_pred_probs_list
-    }
+    return PredictionResponse(
+        predictions=y_pred_labels,
+        probabilities=y_pred_probs_list
+    )
