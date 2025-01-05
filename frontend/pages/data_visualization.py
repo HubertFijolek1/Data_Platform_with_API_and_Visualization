@@ -2,11 +2,25 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import requests
+import time
 
 def app():
     st.title("Data Visualization")
 
-    # Attempt to retrieve data from the backend's /data/ endpoint
+    # Example: local sample data to demonstrate searching
+    sample_data = pd.DataFrame({
+           "category": ["A", "B", "C", "D", "E", "F"],
+           "value": [10, 23, 7, 18, 23, 5]
+                          })
+
+    search_text = st.text_input("Search Category:")
+    if search_text:
+        filtered_data = sample_data[sample_data["category"].str.contains(search_text, case=False)]
+    else:
+        filtered_data = sample_data
+        st.write("Filtered Data:")
+        st.dataframe(filtered_data)
+
     # (Requires the user to be logged in)
     try:
         response = requests.get("http://localhost:8000/data/?page=1&page_size=20")
