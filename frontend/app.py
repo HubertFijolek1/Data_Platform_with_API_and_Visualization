@@ -1,12 +1,22 @@
 import streamlit as st
 import pandas as pd
 
-st.title("Data Analysis Dashboard")
 
-st.write("Upload a CSV file to analyze:")
+from pages import upload_data, login, register
 
-uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-if uploaded_file is not None:
-    data = pd.read_csv(uploaded_file)
-    st.write("Data Preview:")
-    st.dataframe(data.head())
+PAGES = {
+    "Login": login,
+    "Register": register,
+    "Upload Data": upload_data,
+}
+
+def main():
+    st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
+    st.sidebar.title("Navigation")
+    selection = st.sidebar.radio("Go to", list(PAGES.keys()))
+
+    page_module = PAGES[selection]
+    page_module.app()  # call the app() function of the selected module
+
+if __name__ == "__main__":
+    main()
