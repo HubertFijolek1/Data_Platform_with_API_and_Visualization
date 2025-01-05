@@ -5,6 +5,8 @@ import os
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
+from sklearn.metrics import mean_squared_error
+
 def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
     """
     Train a simple classification model using TensorFlow Keras.
@@ -39,6 +41,29 @@ def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.M
     # Train the model
     model.fit(X, y, epochs=epochs, batch_size=32, verbose=1)
 
+    return model
+
+def train_regression_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
+    """
+    Simple feed-forward network for regression using Keras.
+    """
+    df = preprocess_data(df)
+    y = df[label_column].values
+    X = df.drop(columns=[label_column]).values
+
+    model = keras.Sequential([
+        keras.layers.InputLayer(input_shape=(X.shape[1],)),
+        keras.layers.Dense(16, activation='relu'),
+        keras.layers.Dense(8, activation='relu'),
+        keras.layers.Dense(1)  # Linear output for regression
+    ])
+
+    model.compile(
+        optimizer='adam',
+        loss='mse'
+    )
+
+    model.fit(X, y, epochs=epochs, batch_size=32, verbose=1)
     return model
 
 
