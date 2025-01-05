@@ -1,5 +1,6 @@
 from ..ml.bert import analyze_text_sentiment
 from fastapi import HTTPException, APIRouter
+from ..ml.sentiment import SentimentAnalyzer
 
 router = APIRouter(
     prefix="/analysis",
@@ -14,4 +15,16 @@ def bert_sentiment(texts: list[str]):
     if not texts:
         raise HTTPException(status_code=400, detail="No text provided.")
     results = analyze_text_sentiment(texts)
+    return results
+
+@router.post("/sentiment")
+def sentiment_analysis(texts: list[str]):
+    """
+    Example usage of SentimentAnalyzer from sentiment.py.
+    """
+    if not texts:
+        raise HTTPException(status_code=400, detail="No text provided.")
+
+    analyzer = SentimentAnalyzer()
+    results = analyzer.batch_analyze(texts)
     return results
