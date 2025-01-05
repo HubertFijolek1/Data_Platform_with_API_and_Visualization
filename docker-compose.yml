@@ -19,5 +19,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  airflow:
+     image: apache/airflow:2.6.2
+     environment:
+       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+     volumes:
+       - ./scripts:/opt/airflow/dags  # So it can see airflow_ml_pipeline.py
+     ports:
+       - "8080:8080"
 volumes:
   postgres_data:
