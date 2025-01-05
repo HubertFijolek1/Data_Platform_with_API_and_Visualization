@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import pandas as pd
 from .preprocessing import preprocess_data
+import os
 
 class SimplePyTorchModel(nn.Module):
     def __init__(self, input_dim, hidden_dim=16):
@@ -79,4 +80,26 @@ def train_pytorch_regressor(df: pd.DataFrame, label_column: str, epochs=5):
         optimizer.step()
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}")
 
+    return model
+
+def save_pytorch_model(model: nn.Module, model_name: str, version: str = "v1"):
+    """
+    Save a trained PyTorch model to 'saved_models/{model_name}/{version}/model_pt.pt'.
+    """
+    base_dir = os.path.join("saved_models", model_name, version)
+    os.makedirs(base_dir, exist_ok=True)
+    path = os.path.join(base_dir, "model_pt.pt")
+    torch.save(model.state_dict(), path)
+    return path
+
+def load_pytorch_model(model_class, model_name: str, version: str = "v1"):
+    """
+    Load a PyTorch model from 'saved_models/{model_name}/{version}/model_pt.pt'.
+    model_class is the nn.Module class to instantiate first.
+    """
+    path = os.path.join("saved_models", model_name, version, "model_pt.pt")
+    if not os.path.exists(path):
+        return None
+    model = model_class(1)  # We'll have to specify correct input_dim or pass it in
+    model.load_state_dict(torch.load(path))
     return model

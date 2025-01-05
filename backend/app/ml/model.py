@@ -89,21 +89,21 @@ def evaluate_model(model: keras.Model, df: pd.DataFrame, label_column: str):
         "recall": rec
     }
 
-def save_model(model: keras.Model, model_name: str):
+def save_model(model: keras.Model, model_name: str, version: str = "v1"):
     """
-    Save a trained Keras model to disk in the 'saved_models' directory.
-    Model is saved in TensorFlow SavedModel format.
+    Save a trained Keras model to disk in the 'saved_models/{model_name}/{version}' directory.
     """
-    os.makedirs("saved_models", exist_ok=True)
-    path = os.path.join("saved_models", model_name)
+    base_dir = os.path.join("saved_models", model_name, version)
+    os.makedirs(base_dir, exist_ok=True)
+    path = os.path.join(base_dir, "model_tf")
     model.save(path)
     return path
 
-def load_model(model_name: str) -> keras.Model:
+def load_model(model_name: str, version: str = "v1") -> keras.Model:
     """
-    Load a saved Keras model from disk by name. Returns None if not found.
+    Load a saved Keras model from disk by name/version. Returns None if not found.
     """
-    model_path = os.path.join("saved_models", model_name)
+    model_path = os.path.join("saved_models", model_name, version, "model_tf")
     if not os.path.exists(model_path):
         return None
     return keras.models.load_model(model_path)
