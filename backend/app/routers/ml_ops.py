@@ -4,10 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 
+from ..ml.metrics_manager import get_metrics
 from ..database import SessionLocal
 from ..models import Dataset
 from ..routers.auth import get_current_user
 from ..ml.model import train_model, save_model
+from ..ml.model import evaluate_model, evaluate_regression_model
+from ..ml.metrics_manager import save_metrics
 
 router = APIRouter(
     prefix="/ml",
@@ -58,4 +61,24 @@ def retrain_model(
 
     model = train_model(df, label_column=label_column, epochs=5)
     path = save_model(model, model_name)
+    # Evaluate classification
+    metrics = evaluate_model(model, df, label_column=label_column)
+    # Example storing model metrics with version = "v1"
+    save_metrics(model_name, "v1", metrics)
     return {"message": "Model retrained successfully", "model_saved_path": path}
+
+@router.get("/performance")
+def get_model_performance(
+    model_name: str,
+    version: str = "v1"
+):
+    """
+    Return stored model metrics for the given model_name and version.
+    """
+    metrics = get_metrics(model_name, version)
+    if metrics is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No metrics found for {model_name} version {version}."
+        )
+    return metrics

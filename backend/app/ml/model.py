@@ -1,9 +1,10 @@
 from tensorflow import keras
 import pandas as pd
 from .preprocessing import preprocess_data
+from .metrics_manager import save_metrics
 import os
 
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, mean_squared_error
 
 from sklearn.metrics import mean_squared_error
 
@@ -42,6 +43,18 @@ def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.M
     model.fit(X, y, epochs=epochs, batch_size=32, verbose=1)
 
     return model
+
+def evaluate_regression_model(model: keras.Model, df: pd.DataFrame, label_column: str):
+    """
+    Evaluate a trained Keras regression model on MSE or other metrics.
+    """
+    df = preprocess_data(df)
+    y_true = df[label_column].values
+    X = df.drop(columns=[label_column]).values
+
+    y_pred = model.predict(X).flatten()
+    mse = mean_squared_error(y_true, y_pred)
+    return {"mse": mse}
 
 def train_regression_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
     """
