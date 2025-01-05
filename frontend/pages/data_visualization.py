@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
+import plotly.express as px
 import requests
 import time
 
@@ -34,16 +34,18 @@ def app():
     except Exception as e:
         st.error(f"Error retrieving data from API: {e}")
 
-    st.write("Sample Bar Chart (Altair):")
+    st.write("Plotly Bar Chart:")
+    fig_bar = px.bar(data, x="category", y="value", title="Plotly Bar Chart")
+    st.plotly_chart(fig_bar, use_container_width=True)
 
-    sample_data = pd.DataFrame({
-        "category": ["A", "B", "C", "D"],
-        "value": [10, 23, 7, 18]})
-    chart = alt.Chart(sample_data).mark_bar().encode(
-          x = 'category',
-          y = 'value'
-                     )
-    st.altair_chart(chart, use_container_width=True)
+    # Example line chart
+    st.write("Plotly Line Chart:")
+    data_line = pd.DataFrame({
+            "x": list(range(1, 6)),
+            "metric": [3, 8, 4, 9, 11]
+                           })
+    fig_line = px.line(data_line, x="x", y="metric", title="Sample Line Chart")
+    st.plotly_chart(fig_line, use_container_width=True)
 
     st.write("Table View:")
     st.dataframe(sample_data)
