@@ -2,13 +2,14 @@ import streamlit as st
 import pandas as pd
 from pages import data_visualization
 
-from pages import upload_data, login, register
+from pages import upload_data, login, register, user_profile
 
 PAGES = {
     "Login": login,
     "Register": register,
     "Upload Data": upload_data,
     "Data Visualization": data_visualization,
+    "User Profile": user_profile,
 
 }
 
