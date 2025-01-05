@@ -8,16 +8,16 @@ def app():
     st.title("Data Visualization")
 
     # Example: local sample data to demonstrate searching
-    sample_data = pd.DataFrame({
+    data = pd.DataFrame({
            "category": ["A", "B", "C", "D", "E", "F"],
            "value": [10, 23, 7, 18, 23, 5]
                           })
 
     search_text = st.text_input("Search Category:")
     if search_text:
-        filtered_data = sample_data[sample_data["category"].str.contains(search_text, case=False)]
+        filtered_data = data[data["category"].str.contains(search_text, case=False)]
     else:
-        filtered_data = sample_data
+        filtered_data = data
         st.write("Filtered Data:")
         st.dataframe(filtered_data)
 
@@ -47,5 +47,14 @@ def app():
     fig_line = px.line(data_line, x="x", y="metric", title="Sample Line Chart")
     st.plotly_chart(fig_line, use_container_width=True)
 
+    # Implement data export as CSV
+    csv_data = data.to_csv(index=False).encode("utf-8")
+    st.download_button(
+            label = "Export Data as CSV",
+            data = csv_data,
+            file_name = "sample_data.csv",
+            mime = "text/csv"
+                        )
+
     st.write("Table View:")
-    st.dataframe(sample_data)
+    st.dataframe(data)
