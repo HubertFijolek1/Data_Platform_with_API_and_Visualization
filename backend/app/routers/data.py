@@ -1,6 +1,7 @@
 import os
 import uuid
 from typing import List
+import pandas as pd
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Query
 from sqlalchemy.orm import Session
@@ -14,7 +15,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from ..utils.rate_limiter import limiter
 
-from .app.ml.model import train_model, save_model
+from ..ml.model import train_model, save_model
 router = APIRouter(
     prefix="/data",
     tags=["data"],
@@ -76,7 +77,6 @@ def upload_dataset(
                             status_code=400,
                         detail = "label_column is required when train=True."
                                               )
-        import pandas as pd
         file_df = pd.read_csv(file_location)  # For simplicity
         model = train_model(file_df, label_column=label_column, epochs=5)
         model_name = f"{name}_model"

@@ -5,19 +5,18 @@ from alembic import context
 import os
 import sys
 
-# Dodanie ścieżki do sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.models import Base  # Import modeli
+from ..app.models import Base
 
-# Konfiguracja loggera
+# Logger configuration
 config = context.config
 fileConfig(config.config_file_name)
 
-# Metadata do migracji
+# Metadata for migration
 target_metadata = Base.metadata
 
-# Pobranie DATABASE_URL z zmiennych środowiskowych
+# Getting DATABASE_URL from environment variables
 database_url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
 
 def run_migrations_offline():
