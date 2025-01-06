@@ -1,32 +1,23 @@
 import streamlit as st
 from pages import login, register, upload_data, data_visualization, user_profile
+from components.navbar import show_navbar
 
 def main():
     # Must be the first Streamlit command
     st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
 
-    if "auth_token" not in st.session_state:
-        # If not logged in, only show "Login" or "Register"
-        available_pages = {"Login": login, "Register": register}
-        st.sidebar.title("Navigation")
-        selection = st.sidebar.radio("Go to", list(available_pages.keys()))
-        page_module = available_pages[selection]
-        page_module.app()
-        return
+    # Initialize PAGES in session state if not present
+    if "PAGES" not in st.session_state:
+        st.session_state["PAGES"] = {
+            "Login": login,
+            "Register": register,
+            "Upload Data": upload_data,
+            "Data Visualization": data_visualization,
+            "User Profile": user_profile,
+        }
 
-    # If logged in, show all pages
-    st.sidebar.title("Navigation")
-    selection = st.sidebar.radio("Go to", list(PAGES.keys()))
-    page_module = PAGES[selection]
-    page_module.app()
-
-PAGES = {
-    "Login": login,
-    "Register": register,
-    "Upload Data": upload_data,
-    "Data Visualization": data_visualization,
-    "User Profile": user_profile,
-}
+    # Show the navbar
+    show_navbar()
 
 if __name__ == "__main__":
     main()
