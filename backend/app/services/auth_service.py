@@ -4,10 +4,7 @@ from ..models import User
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
-
-SECRET_KEY = "my_secret_key"  #will be changed to config
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+from ..config.settings import settings
 
 def authenticate_user(db: Session, email: str, password: str) -> User:
     user = crud.get_user_by_email(db, email=email)
@@ -19,9 +16,9 @@ def authenticate_user(db: Session, email: str, password: str) -> User:
 
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 def login_user(credentials: schemas.UserLogin, db: Session) -> str:
     user = authenticate_user(db, credentials.email, credentials.password)

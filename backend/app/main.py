@@ -1,3 +1,4 @@
+import logging
 import logging.config
 import os
 from fastapi import FastAPI
@@ -9,11 +10,9 @@ from slowapi.errors import RateLimitExceeded
 from fastapi.responses import PlainTextResponse
 
 from .routers import auth_router, data_router, predict_router, ml_ops_router
+from .config.settings import settings
 
 load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-SECRET_KEY = os.getenv("SECRET_KEY")
 
 # load logging config from a file
 LOGGING_CONFIG = os.path.join(os.path.dirname(__file__), "..", "logging.conf")
@@ -33,20 +32,10 @@ This API allows you to manage and analyze datasets.
     version="1.0.0",
 )
 
-# CORS configuration
-origins = [
-    "http://localhost:3000",
-    "http://localhost:8501",
-    "https://my-frontend-domain.com",
-    "http://localhost:8000",
-    "http://localhost:8001",
-    "http://localhost:8502",
-    "http://localhost:8503",
-]
-
+# CORS configuration using centralized settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
