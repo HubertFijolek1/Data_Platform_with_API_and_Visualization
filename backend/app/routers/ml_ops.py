@@ -1,15 +1,14 @@
 import os
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from ..ml.metrics_manager import get_metrics
 from ..database import SessionLocal
-from ..models import Dataset
+from backend.app.models.models import Dataset
 from ..routers.auth import get_current_user
 from ..ml.model import train_model, save_model
-from ..ml.model import evaluate_model, evaluate_regression_model
+from ..ml.model import evaluate_model
 from ..ml.metrics_manager import save_metrics
 
 router = APIRouter(

@@ -1,4 +1,3 @@
-import logging
 import logging.config
 import os
 from fastapi import FastAPI
@@ -9,9 +8,7 @@ from dotenv import load_dotenv
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import PlainTextResponse
 
-from .routers import auth, data, predict, ml_ops
-from .middlewares import error_handling_middleware
-from .utils.rate_limiter import limiter
+from .routers import auth_router, data_router, predict_router, ml_ops_router
 
 load_dotenv()
 
@@ -55,18 +52,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register the custom error-handling middleware
-# app.middleware("http")(error_handling_middleware)
+app.include_router(auth_router)
+app.include_router(data_router)
+app.include_router(predict_router)
+app.include_router(ml_ops_router)
 
-# # Add the rate limiting middleware from "slowapi" or a custom solution (see below).
-# app.add_middleware(limiter._middleware_class, limiter=limiter)
-
-app.include_router(auth.router)
-app.include_router(data.router)
-app.include_router(predict.router)
-app.include_router(ml_ops.router)
-
-# Example usage in routes (pseudocode):
 @app.get("/test-logging")
 def test_logging():
     logger.info("Testing INFO log level.")

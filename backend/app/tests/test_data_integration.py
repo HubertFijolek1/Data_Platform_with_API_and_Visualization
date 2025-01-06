@@ -1,10 +1,9 @@
 import os
-import io
 import pytest
 from fastapi.testclient import TestClient
 from ..main import app
 from ..database import Base, engine, SessionLocal
-from ..models import Dataset, User
+from backend.app.models.models import User
 
 
 @pytest.fixture

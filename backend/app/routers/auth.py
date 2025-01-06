@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from .. import schemas, crud
 from ..database import SessionLocal
-from ..models import User
+from backend.app.models.models import User
 
 SECRET_KEY = "my_secret_key"
 ALGORITHM = "HS256"
