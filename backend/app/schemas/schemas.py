@@ -8,9 +8,6 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
 
 class UserRead(BaseModel):
     id: int
@@ -20,15 +17,19 @@ class UserRead(BaseModel):
     class Config:
         from_attributes = True
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class TokenData(BaseModel):
     email: Optional[EmailStr] = None
 
+
 class DatasetCreate(BaseModel):
     name: str
+
 
 class DatasetRead(BaseModel):
     id: int
@@ -38,3 +39,8 @@ class DatasetRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
