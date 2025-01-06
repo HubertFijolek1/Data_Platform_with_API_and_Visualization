@@ -2,26 +2,23 @@ import streamlit as st
 from pages import login, register, upload_data, data_visualization, user_profile
 
 def main():
-    # A simple global-level error catch in Streamlit might be limited,
-    # but i want to demonstrate the concept:
-    try:
-        st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
-        if "auth_token" not in st.session_state:
-            # If not logged in, only show "Login" or "Register"
-            available_pages = {"Login": login, "Register": register}
-            st.sidebar.title("Navigation")
-            selection = st.sidebar.radio("Go to", list(available_pages.keys()))
-            page_module = available_pages[selection]
-            page_module.app()
-            return
+    # Must be the first Streamlit command
+    st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
 
-        # If logged in, show all pages
+    if "auth_token" not in st.session_state:
+        # If not logged in, only show "Login" or "Register"
+        available_pages = {"Login": login, "Register": register}
         st.sidebar.title("Navigation")
-        selection = st.sidebar.radio("Go to", list(PAGES.keys()))
-        page_module = PAGES[selection]
+        selection = st.sidebar.radio("Go to", list(available_pages.keys()))
+        page_module = available_pages[selection]
         page_module.app()
-    except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
+        return
+
+    # If logged in, show all pages
+    st.sidebar.title("Navigation")
+    selection = st.sidebar.radio("Go to", list(PAGES.keys()))
+    page_module = PAGES[selection]
+    page_module.app()
 
 PAGES = {
     "Login": login,

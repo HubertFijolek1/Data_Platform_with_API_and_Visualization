@@ -1,0 +1,6 @@
+streamlit
+requests
+pandas
+plotly
+flake8
+black

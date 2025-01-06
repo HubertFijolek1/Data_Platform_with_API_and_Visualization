@@ -4,9 +4,12 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/data_db
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - saved_models_data:/app/saved_models
 
   db:
     image: postgres:13
@@ -18,14 +21,23 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  airflow:
-     image: apache/airflow:2.6.2
-     environment:
-       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
-     volumes:
-       - ./scripts:/opt/airflow/dags  # So it can see airflow_ml_pipeline.py
-     ports:
-       - "8080:8080"
+  frontend:
+    build: ./frontend
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://backend:8000
+    volumes:
+      - ./frontend:/app
+
 volumes:
   postgres_data:
+  saved_models_data:

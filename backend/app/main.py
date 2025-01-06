@@ -4,13 +4,19 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .utils.rate_limiter import limiter
+from dotenv import load_dotenv
+
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import PlainTextResponse
 
 from .routers import auth, data, predict, ml_ops
 from .middlewares import error_handling_middleware
 from .utils.rate_limiter import limiter
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # load logging config from a file
 LOGGING_CONFIG = os.path.join(os.path.dirname(__file__), "..", "logging.conf")
@@ -35,7 +41,10 @@ origins = [
     "http://localhost:3000",
     "http://localhost:8501",
     "https://my-frontend-domain.com",
-    # etc.
+    "http://localhost:8000",
+    "http://localhost:8001",
+    "http://localhost:8502",
+    "http://localhost:8503",
 ]
 
 app.add_middleware(
@@ -47,10 +56,10 @@ app.add_middleware(
 )
 
 # Register the custom error-handling middleware
-app.middleware("http")(error_handling_middleware)
+# app.middleware("http")(error_handling_middleware)
 
-# Add the rate limiting middleware from "slowapi" or a custom solution (see below).
-app.add_middleware(limiter._middleware_class, limiter=limiter)
+# # Add the rate limiting middleware from "slowapi" or a custom solution (see below).
+# app.add_middleware(limiter._middleware_class, limiter=limiter)
 
 app.include_router(auth.router)
 app.include_router(data.router)

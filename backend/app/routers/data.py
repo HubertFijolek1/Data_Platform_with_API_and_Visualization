@@ -3,7 +3,7 @@ import uuid
 from typing import List
 import pandas as pd
 
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Query, Request
 from sqlalchemy.orm import Session
 
 from .. import schemas, models
@@ -158,7 +158,7 @@ def delete_dataset(
     db.commit()
     return  # 204 No Content means success without response body
 
-@router.get("/limited")
-@limiter.limit("5/minute")  # only 5 calls allowed per minute for this endpoint
-def limited_endpoint():
-    return {"message": "Rate-limited endpoint"}
+# @router.get("/limited")
+# @limiter.limit("5/minute")  # only 5 calls allowed per minute
+# def limited_endpoint(request: Request):
+#     return {"message": "Rate-limited endpoint"}
