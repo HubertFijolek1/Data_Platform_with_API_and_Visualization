@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import pandas as pd
 from faker import Faker
+import logging
 
 from .. import schemas, models, crud
 from ..database import SessionLocal
@@ -17,6 +18,8 @@ router = APIRouter(
 
 fake = Faker()
 
+logger = logging.getLogger("app")
+
 def get_db():
     db = SessionLocal()
     try:
@@ -29,6 +32,7 @@ def generate_dataset(n_rows: int = 1000, db: Session = Depends(get_db)):
     """
     Generate a synthetic dataset with fake user data.
     """
+    logger.debug(f"Generating synthetic dataset with {n_rows} rows.")
     data = {
         "name": [fake.name() for _ in range(n_rows)],
         "email": [fake.email() for _ in range(n_rows)],
@@ -51,4 +55,5 @@ def generate_dataset(n_rows: int = 1000, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(dataset)
 
+    logger.info(f"Synthetic dataset generated and saved as {file_name}.")
     return dataset
