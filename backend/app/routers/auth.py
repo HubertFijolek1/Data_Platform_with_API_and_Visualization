@@ -6,6 +6,8 @@ from ..models import User
 from ..services.auth_service import login_user
 from ..crud import get_user_by_email, get_user_by_username, create_user, get_password_hash
 from ..config.settings import settings
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 
 router = APIRouter(
     prefix="/auth",
@@ -55,6 +57,10 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     access_token = login_user(credentials, db)
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=schemas.UserRead)
+def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
 @router.put("/update_profile")
 def update_profile(
