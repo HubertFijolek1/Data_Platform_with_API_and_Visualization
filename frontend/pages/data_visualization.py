@@ -3,16 +3,19 @@ import requests
 import pandas as pd
 import os
 
+from ..components.headers import show_header
+from ..components.footers import show_footer
+
 
 def app():
-    st.title("Data Visualization")
+    show_header("Data Visualization", "Explore and visualize your datasets")
 
-    BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
+    BACKEND_URL = st.secrets["BACKEND_URL"]
 
     # Fetch datasets from backend
     try:
-        response = requests.get(f"{BACKEND_URL}/data/",
-                                headers={"Authorization": f"Bearer {st.session_state.get('auth_token', '')}"})
+        headers = {"Authorization": f"Bearer {st.session_state.get('auth_token', '')}"}
+        response = requests.get(f"{BACKEND_URL}/data/", headers=headers)
         if response.status_code == 200:
             datasets = response.json()
             dataset_names = [dataset['name'] for dataset in datasets]
@@ -32,18 +35,28 @@ def app():
                 # Example Visualization
                 st.write("### Data Visualization")
                 if not data.empty:
-                    chart_type = st.selectbox("Select Chart Type", ["Line", "Bar", "Scatter"])
+                    chart_type = st.selectbox("Select Chart Type", ["Line", "Bar", "Scatter", "Histogram"])
                     columns = data.columns.tolist()
                     if len(columns) >= 2:
                         x_axis = st.selectbox("Select X-axis", columns)
                         y_axis = st.selectbox("Select Y-axis", columns)
 
-                        if chart_type == "Line":
-                            st.line_chart(data.set_index(x_axis)[y_axis])
-                        elif chart_type == "Bar":
-                            st.bar_chart(data.set_index(x_axis)[y_axis])
-                        elif chart_type == "Scatter":
-                            st.scatter_chart(data[[x_axis, y_axis]])
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            st.markdown(f"**{chart_type} Chart**")
+                            if chart_type == "Line":
+                                st.line_chart(data.set_index(x_axis)[y_axis])
+                            elif chart_type == "Bar":
+                                st.bar_chart(data.set_index(x_axis)[y_axis])
+                            elif chart_type == "Scatter":
+                                st.scatter_chart(data[[x_axis, y_axis]])
+                            elif chart_type == "Histogram":
+                                st.hist_chart(data[y_axis])
+
+                        with col2:
+                            st.markdown("**Data Summary**")
+                            st.write(data.describe())
                     else:
                         st.warning("Not enough columns to create a chart.")
                 else:
@@ -54,3 +67,5 @@ def app():
         st.error("Unable to connect to the backend. Please try again later.")
     except Exception as e:
         st.error(f"An unexpected error occurred: {e}")
+
+    show_footer()

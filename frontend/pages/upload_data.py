@@ -2,17 +2,26 @@ import streamlit as st
 import requests
 import os
 
+from ..components.headers import show_header
+from ..components.footers import show_footer
+
 
 def app():
-    st.title("Upload Data")
+    show_header("Upload Data", "Add your datasets to the platform")
 
-    BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
+    BACKEND_URL = st.secrets["BACKEND_URL"]
 
     with st.form("upload_form"):
-        name = st.text_input("Dataset Name")
-        file = st.file_uploader("Upload CSV or TXT", type=["csv", "txt"])
-        train = st.checkbox("Train Model After Upload")
-        label_column = st.text_input("Label Column (if training)")
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            name = st.text_input("Dataset Name")
+            train = st.checkbox("Train Model After Upload")
+
+        with col2:
+            file = st.file_uploader("Upload CSV or TXT", type=["csv", "txt"])
+            label_column = st.text_input("Label Column (if training)")
+
         submit = st.form_submit_button("Upload")
 
     if submit:
@@ -31,15 +40,20 @@ def app():
 
         headers = {"Authorization": f"Bearer {st.session_state.get('auth_token', '')}"}
 
-        try:
-            response = requests.post(f"{BACKEND_URL}/data/upload", data=data, files=files, headers=headers)
-            if response.status_code == 200:
-                dataset = response.json()
-                st.success(f"Dataset '{dataset['name']}' uploaded successfully!")
-                st.write(f"File Name: {dataset['file_name']}")
-            else:
-                st.error(f"Failed to upload dataset: {response.json().get('detail', 'Unknown error.')}")
-        except requests.exceptions.ConnectionError:
-            st.error("Unable to connect to the backend. Please try again later.")
-        except Exception as e:
-            st.error(f"An unexpected error occurred: {e}")
+        with st.spinner("Uploading dataset..."):
+            try:
+                response = requests.post(f"{BACKEND_URL}/data/upload", data=data, files=files, headers=headers)
+                if response.status_code == 200:
+                    dataset = response.json()
+                    st.success(f"Dataset '{dataset['name']}' uploaded successfully!")
+                    st.write(f"File Name: {dataset['file_name']}")
+                    if train:
+                        st.info("Model training has been initiated.")
+                else:
+                    st.error(f"Failed to upload dataset: {response.json().get('detail', 'Unknown error.')}")
+            except requests.exceptions.ConnectionError:
+                st.error("Unable to connect to the backend. Please try again later.")
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {e}")
+
+    show_footer()

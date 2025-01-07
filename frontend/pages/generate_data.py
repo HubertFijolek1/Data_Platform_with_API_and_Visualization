@@ -12,8 +12,15 @@ def app():
     BACKEND_URL = st.secrets["BACKEND_URL"]
 
     with st.form("data_generator_form"):
-        n_rows = st.number_input("Number of Rows", min_value=100, max_value=100000, step=100, value=1000)
-        dataset_name = st.text_input("Dataset Name", value="Synthetic Dataset")
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            n_rows = st.number_input("Number of Rows", min_value=100, max_value=100000, step=100, value=1000)
+            dataset_name = st.text_input("Dataset Name", value="Synthetic Dataset")
+
+        with col2:
+            st.write("")  # Empty to align the submit button
+
         submit = st.form_submit_button("Generate Dataset")
 
     if submit:
