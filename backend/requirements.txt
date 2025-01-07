@@ -35,9 +35,9 @@ tomli==2.2.1
 typing_extensions==4.12.2
 uvicorn==0.34.0
 tensorflow==2.15.0
-#tensorflow-metal==0.7.0
 slowapi==0.1.7
 email-validator>=2.0
 python-dotenv>=1.0.0
 httpx==0.24.0
 python-multipart
+faker
