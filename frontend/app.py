@@ -13,7 +13,7 @@ def main():
             "Login": login,
             "Register": register,
             "Upload Data": upload_data,
-            "Generate Data": generate_data,
+            "Generate Data": generate_data,  # New Page
             "Data Visualization": data_visualization,
             "User Profile": user_profile,
         }
