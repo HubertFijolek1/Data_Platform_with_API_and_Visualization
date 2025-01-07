@@ -34,3 +34,10 @@ Aby uruchomić testy backendu:
     cd backend
     pytest
     ```
+
+## Generating Synthetic Data
+
+To generate synthetic users and datasets, run the following script:
+
+```bash
+python scripts/generate_fake_data.py --users 200 --datasets 100
