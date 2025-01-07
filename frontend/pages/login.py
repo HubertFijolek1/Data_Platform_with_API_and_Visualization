@@ -1,15 +1,16 @@
 import streamlit as st
 import requests
+from ..components.headers import show_header
+from ..components.footers import show_footer
+from ..components.forms import create_login_form
+
 
 def app():
-    st.title("Login")
+    show_header("Login", "Access your account")
 
     BACKEND_URL = st.secrets["BACKEND_URL"]
 
-    with st.form("login_form"):
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Log In")
+    email, password, submit = create_login_form()
 
     if submit:
         if not email or not password:
@@ -38,3 +39,5 @@ def app():
                 st.error("Unable to connect to the backend. Please try again later.")
             except Exception as e:
                 st.error(f"An unexpected error occurred: {e}")
+
+    show_footer()
