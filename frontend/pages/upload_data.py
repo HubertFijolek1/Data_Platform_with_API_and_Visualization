@@ -1,61 +1,45 @@
 import streamlit as st
-import pandas as pd
 import requests
-import io
+import os
 
 
 def app():
-    st.title("Data Upload")
+    st.title("Upload Data")
 
-    if "auth_token" not in st.session_state:
-        st.warning("You must be logged in to upload data.")
-        return
+    BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
 
-    st.write("Upload a CSV or TXT file to the platform:")
+    with st.form("upload_form"):
+        name = st.text_input("Dataset Name")
+        file = st.file_uploader("Upload CSV or TXT", type=["csv", "txt"])
+        train = st.checkbox("Train Model After Upload")
+        label_column = st.text_input("Label Column (if training)")
+        submit = st.form_submit_button("Upload")
 
-    uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt"])
-    dataset_name = st.text_input("Dataset Name", value="My Dataset")
-    train_model_flag = st.checkbox("Train Model Immediately?")
-    label_col = st.text_input("Label Column (if training)")
+    if submit:
+        if not name or not file:
+            st.error("Please provide a dataset name and upload a file.")
+            return
 
-    if uploaded_file is not None:
+        files = {
+            "file": (file.name, file.getvalue(), file.type)
+        }
+        data = {
+            "name": name,
+            "train": train,
+            "label_column": label_column if train else None
+        }
+
+        headers = {"Authorization": f"Bearer {st.session_state.get('auth_token', '')}"}
+
         try:
-            if uploaded_file.name.lower().endswith(".csv"):
-                df = pd.read_csv(uploaded_file)
+            response = requests.post(f"{BACKEND_URL}/data/upload", data=data, files=files, headers=headers)
+            if response.status_code == 200:
+                dataset = response.json()
+                st.success(f"Dataset '{dataset['name']}' uploaded successfully!")
+                st.write(f"File Name: {dataset['file_name']}")
             else:
-                df = pd.read_csv(uploaded_file, delimiter="\t")
-
-            st.write("Data Preview:")
-            st.dataframe(df.head())
-
-            # Optionally, send to backend
-            if st.button("Submit to Backend"):
-                headers = {"Authorization": f"Bearer {st.session_state['auth_token']}"}
-
-                # Prepare files payload
-                files = {
-                    "file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")
-                }
-                form_data = {
-                    "name": dataset_name,
-                    "train": str(train_model_flag).lower(),  # "true" or "false"
-                    "label_column": label_col if label_col else ""
-                }
-
-                try:
-                    resp = requests.post(
-                        "http://localhost:8000/data/upload",
-                        headers=headers,
-                        files=files,
-                        data=form_data
-                    )
-                    if resp.status_code == 200:
-                        st.success("Dataset uploaded successfully!")
-                        st.json(resp.json())
-                    else:
-                        st.error(f"Upload failed: {resp.json().get('detail', resp.text)}")
-                except Exception as ex:
-                    st.error(f"Error uploading file: {ex}")
-
+                st.error(f"Failed to upload dataset: {response.json().get('detail', 'Unknown error.')}")
+        except requests.exceptions.ConnectionError:
+            st.error("Unable to connect to the backend. Please try again later.")
         except Exception as e:
-            st.error(f"Error reading file locally: {e}")
+            st.error(f"An unexpected error occurred: {e}")
