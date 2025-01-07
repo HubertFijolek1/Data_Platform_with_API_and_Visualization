@@ -1,5 +1,5 @@
 import streamlit as st
-from pages import login, register, upload_data, data_visualization, user_profile
+from pages import login, register, upload_data, data_visualization, user_profile, generate_data
 from components.navbar import show_navbar
 
 def main():
@@ -12,6 +12,7 @@ def main():
             "Login": login,
             "Register": register,
             "Upload Data": upload_data,
+            "Generate Data": generate_data,  # New Page from Commit 17
             "Data Visualization": data_visualization,
             "User Profile": user_profile,
         }
