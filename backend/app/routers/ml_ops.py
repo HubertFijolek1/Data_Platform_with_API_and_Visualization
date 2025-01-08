@@ -1,11 +1,16 @@
 import os
+from typing import List
+
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from ..utils.role_checker import RoleChecker
+from ..ml.metrics_manager import get_metrics
+
 from ..ml.metrics_manager import get_metrics
 from ..database import SessionLocal
-from backend.app.models.models import Dataset
+from ..models.models import Dataset
 from ..routers.auth import get_current_user
 from ..ml.model import train_model, save_model
 from ..ml.model import evaluate_model
@@ -80,4 +85,25 @@ def get_model_performance(
             status_code=404,
             detail=f"No metrics found for {model_name} version {version}."
         )
+    return metrics
+
+@router.get("/models", response_model=List[str], tags=["ml_ops"])
+def list_models(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """
+    List all saved models.
+    """
+    saved_models_dir = "saved_models"
+    if not os.path.exists(saved_models_dir):
+        return []
+    model_names = [name for name in os.listdir(saved_models_dir) if os.path.isdir(os.path.join(saved_models_dir, name))]
+    return model_names
+
+@router.get("/metrics/{model_name}/{version}", response_model=dict, tags=["ml_ops"])
+def get_model_metrics(model_name: str, version: str = "v1", db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """
+    Retrieve performance metrics for a specified model and version.
+    """
+    metrics = get_metrics(model_name, version)
+    if metrics is None:
+        raise HTTPException(status_code=404, detail="Metrics not found for the specified model and version.")
     return metrics
