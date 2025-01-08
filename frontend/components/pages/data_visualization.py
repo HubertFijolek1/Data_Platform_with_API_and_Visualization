@@ -3,13 +3,17 @@ import requests
 import pandas as pd
 import os
 
-from ..components.headers import show_header
-from ..components.footers import show_footer
+from ..headers import show_header
+from ..footers import show_footer
 
 
 def app():
     show_header("Data Visualization", "Explore and visualize your datasets")
 
+    if "auth_token" not in st.session_state:
+        st.warning("You need to log in to see datasets.")
+        show_footer()
+        return
     BACKEND_URL = st.secrets["BACKEND_URL"]
 
     # Fetch datasets from backend
@@ -51,8 +55,8 @@ def app():
                                 st.bar_chart(data.set_index(x_axis)[y_axis])
                             elif chart_type == "Scatter":
                                 st.scatter_chart(data[[x_axis, y_axis]])
-                            elif chart_type == "Histogram":
-                                st.hist_chart(data[y_axis])
+                            # elif chart_type == "Histogram":
+                            #     st.hist_chart(data[y_axis])
 
                         with col2:
                             st.markdown("**Data Summary**")

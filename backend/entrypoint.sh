@@ -15,7 +15,7 @@ wait_for_db
 
 # Run Alembic migrations
 echo "Running Alembic migrations..."
-alembic upgrade head
+alembic -c alembic.ini upgrade head
 
 # Start the FastAPI server
 echo "Starting FastAPI server..."

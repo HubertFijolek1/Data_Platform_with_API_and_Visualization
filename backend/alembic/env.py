@@ -12,7 +12,7 @@ current_dir = Path(__file__).resolve()
 backend_dir = current_dir.parents[1]  # Move 2 levels up: [alembic/, env.py] => [backend/]
 sys.path.append(str(backend_dir))
 
-from app.models import Base  # <--- absolute import instead of from ..app.models import Base
+from app.database import Base
 
 # 2. The Alembic Config object
 config = context.config
