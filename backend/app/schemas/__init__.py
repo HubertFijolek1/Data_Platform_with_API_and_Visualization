@@ -4,5 +4,16 @@ from .schemas import (
     Token,
     TokenData,
     DatasetCreate,
-    DatasetRead
+    DatasetRead,
+    UserLogin
 )
+
+__all__ = [
+    "UserCreate",
+    "UserRead",
+    "Token",
+    "TokenData",
+    "DatasetCreate",
+    "DatasetRead",
+    "UserLogin"
+]
