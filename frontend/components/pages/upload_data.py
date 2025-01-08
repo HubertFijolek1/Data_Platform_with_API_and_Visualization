@@ -2,12 +2,17 @@ import streamlit as st
 import requests
 import os
 
-from ..components.headers import show_header
-from ..components.footers import show_footer
+from ..headers import show_header
+from ..footers import show_footer
 
 
 def app():
     show_header("Upload Data", "Add your datasets to the platform")
+
+    if "auth_token" not in st.session_state:
+        st.warning("You need to login before uploading data.")
+        show_footer()
+        return
 
     BACKEND_URL = st.secrets["BACKEND_URL"]
 

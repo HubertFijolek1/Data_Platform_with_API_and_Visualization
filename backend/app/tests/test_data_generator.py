@@ -2,7 +2,7 @@
 import pytest
 from sqlalchemy.orm import Session
 from fastapi import status
-
+import os
 from ...app import crud, schemas
 
 
@@ -33,6 +33,15 @@ def test_generate_dataset(client: "TestClient", auth_token: str):
     assert "name" in data
     assert "file_name" in data
     assert "uploaded_at" in data
+
+    # Expected file name based on dataset ID
+    expected_file_name = f"generated_{data['id']}.csv"
+    assert data["file_name"] == expected_file_name
+
+    # Check that the file exists in uploads
+    file_path = os.path.join("backend", "uploads", expected_file_name)
+    assert os.path.exists(file_path)
+
 
 
 def test_generate_dataset_unauthorized(client: "TestClient"):
