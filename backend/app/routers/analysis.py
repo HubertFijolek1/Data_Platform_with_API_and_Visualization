@@ -1,6 +1,6 @@
-from backend.app.ml.bert import analyze_text_sentiment
+from ..ml.bert import analyze_text_sentiment
 from fastapi import HTTPException, APIRouter
-from backend.app.ml.sentiment import SentimentAnalyzer
+from ..ml.sentiment import SentimentAnalyzer
 
 router = APIRouter(
     prefix="/analysis",

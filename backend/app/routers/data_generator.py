@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import pandas as pd
 from faker import Faker
 import logging
+from typing import Optional
 
 from .. import schemas, models, crud
 from ..database import SessionLocal
@@ -41,17 +42,25 @@ def generate_dataset(n_rows: int = 1000, db: Session = Depends(get_db)):
     }
     df = pd.DataFrame(data)
 
-    unique_id = str(uuid.uuid4())
-    file_name = f"generated_{unique_id}.csv"
-    os.makedirs("uploads", exist_ok=True)
-    file_path = os.path.join("uploads", file_name)
-    df.to_csv(file_path, index=False)
-
+    # Create a dataset entry first to get its ID
     dataset = models.Dataset(
-        name=f"Generated Dataset {unique_id}",
-        file_name=file_name
+        name=f"Generated Dataset",
+        file_name="",  # Temporary, will update after saving
+        uploaded_at=pd.Timestamp.utcnow()
     )
     db.add(dataset)
+    db.commit()
+    db.refresh(dataset)
+
+    # Use dataset ID to create a unique filename
+    file_name = f"generated_{dataset.id}.csv"
+    uploads_dir = os.path.join(os.getcwd(), "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    file_path = os.path.join(uploads_dir, file_name)
+    df.to_csv(file_path, index=False)
+
+    # Update the dataset with the correct file name
+    dataset.file_name = file_name
     db.commit()
     db.refresh(dataset)
 
