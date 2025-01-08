@@ -1,8 +1,8 @@
 import streamlit as st
 import requests
-from ..components.headers import show_header
-from ..components.footers import show_footer
-from ..components.forms import create_login_form
+from ..headers import show_header
+from ..footers import show_footer
+from ..forms import create_login_form
 
 
 def app():

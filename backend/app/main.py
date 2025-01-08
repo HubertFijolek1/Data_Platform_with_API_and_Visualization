@@ -2,6 +2,7 @@ import logging.config
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from dotenv import load_dotenv
 
@@ -46,6 +47,11 @@ app.include_router(predict_router)
 app.include_router(ml_ops_router)
 app.include_router(data_generator_router)
 app.include_router(data_upload_router)
+
+uploads_dir = os.path.join(os.getcwd(), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)  # Creates the directory if it doesn't exist
+
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 @app.get("/test-logging")
 def test_logging():
