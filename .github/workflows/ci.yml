@@ -27,7 +27,7 @@ jobs:
 
     env:
       VIRTUAL_ENV: venv
-      PATH: venv/bin:/usr/local/bin:$PATH  # Updated PATH without referencing undefined env.PATH
+      PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
     steps:
       # 1. Checkout the repository
