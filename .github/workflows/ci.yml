@@ -63,7 +63,15 @@ jobs:
         run: |
           pip install alembic
 
-      # 6. Apply Migrations to Test Database
+      # 6. Install dependencies
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          pip install --upgrade pip
+          for req in $(find . -name "requirements.txt"); do pip install -r $req; done
+          pip install flake8 black isort pytest pytest-cov
+
+      # 7. Apply Migrations to Test Database
       - name: Apply Migrations
         run: |
           alembic upgrade head
@@ -71,7 +79,7 @@ jobs:
           TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         working-directory: ./backend
 
-      # 7. Cache pip dependencies to speed up builds
+      # 8. Cache pip dependencies to speed up builds
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -82,13 +90,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 8. Install dependencies
-      - name: Install Dependencies
-        run: |
-          python -m venv venv
-          pip install --upgrade pip
-          for req in $(find . -name "requirements.txt"); do pip install -r $req; done
-          pip install flake8 black isort pytest pytest-cov
+
 
       # 9. Lint with flake8
       - name: Lint with flake8
