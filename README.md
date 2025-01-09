@@ -261,6 +261,6 @@ Workflow configuration can be found in `.github/workflows/ci.yml`.
 ## Contact
 For questions, suggestions, or collaboration, contact:
 
-**Hubert Fijołek**  
-GitHub: [HubertFijolek1](https://github.com/HubertFijolek1)  
+**Hubert Fijołek**
+GitHub: [HubertFijolek1](https://github.com/HubertFijolek1)
 Email: hubertfijolek1@gmail.com

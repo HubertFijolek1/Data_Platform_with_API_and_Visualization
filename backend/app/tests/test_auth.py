@@ -1,11 +1,12 @@
-from app.database import Base, get_db
-from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from ..database import Base, get_db
+from ..main import app
+
 # PostgreSQL test database URL
-DATABASE_URL = "postgresql://postgres:password@localhost:5432/data_db"
+DATABASE_URL = "postgresql://postgres:password@db:5432/data_db"
 
 engine = create_engine(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -65,7 +66,7 @@ def test_register_user():
 
 
 def test_login_user():
-    # Najpierw zarejestruj użytkownika
+    # zarejestruj użytkownika
     response = client.post(
         "/auth/register",
         json={
