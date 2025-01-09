@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
 
     steps:
@@ -39,27 +39,41 @@ jobs:
         pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Build the Docker image
+    - name: Build and run Docker containers
       run: |
-        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> backend/.env
-        echo "TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}" >> backend/.env
-        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> backend/.env
-        echo "ALGORITHM=${{ secrets.ALGORITHM }}" >> backend/.env
-        echo "ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}" >> backend/.env
-        echo "BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}" >> backend/.env
-        docker-compose build
+        docker-compose up -d --build
+
+    - name: Wait for services to be healthy
+      run: |
+        docker-compose ps -q | wc -l | xargs -I {} test {} -eq 3  # Check if 3 services are running
+        echo "Waiting for services to become healthy..."
+        while ! docker-compose ps --all | grep healthy | grep -c 'health: ok' | grep 3; do
+          sleep 5;
+        done;
+        echo "All services are healthy!"
 
     - name: Run tests (backend)
-      run: docker-compose run backend pytest
+      run: docker-compose exec backend pytest
 
     - name: Lint with flake8 (backend)
-      run: docker-compose run backend flake8 .
-
-    - name: Run Streamlit app (frontend)
-      run: docker-compose up -d frontend
+      run: docker-compose exec backend flake8 .
 
     - name: Check Streamlit app availability
       run: |
-        apt-get update -y
-        apt-get install -y wait-for-it
-        wait-for-it http://localhost:8501 -t 60 -- echo "Streamlit app is available"
+        sudo apt-get update -y
+        sudo apt-get install -y curl
+
+        # Try to connect to the Streamlit app for up to 60 seconds
+        max_attempts=60
+        attempt=1
+        until curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8501 | grep 200 || [ $attempt -eq $max_attempts ]; do
+          echo "Attempt $attempt failed. Waiting for Streamlit to become available..."
+          attempt=$((attempt + 1))
+          sleep 1
+        done
+
+        if [ $attempt -eq $max_attempts ]; then
+          echo "Streamlit app did not become available within the timeout period."
+          exit 1
+        else
+          echo "Streamlit app is available!"

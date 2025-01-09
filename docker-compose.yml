@@ -1,65 +1,55 @@
-name: Data Analysis Platform CI
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    volumes:
+      - saved_models_data:/app/saved_models
+      - ./backend/uploads:/app/uploads  # Mount uploads directory for access
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: data_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+  frontend:
+    build: ./frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    volumes:
+      - ./frontend:/app
+      - ./frontend/.streamlit/secrets.toml:/app/.streamlit/secrets.toml  # Mount secrets
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8501/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Install docker-compose
-      run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-
-    - name: Install dependencies (backend)
-      working-directory: ./backend
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Install dependencies (frontend)
-      working-directory: ./frontend
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Build the Docker image
-      run: |
-        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> backend/.env
-        echo "TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}" >> backend/.env
-        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> backend/.env
-        echo "ALGORITHM=${{ secrets.ALGORITHM }}" >> backend/.env
-        echo "ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}" >> backend/.env
-        echo "BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}" >> backend/.env
-        docker-compose build
-
-    - name: Run tests (backend)
-      run: docker-compose run backend pytest
-
-    - name: Lint with flake8 (backend)
-      run: docker-compose run backend flake8 .
-
-    - name: Run Streamlit app (frontend)
-      run: docker-compose up -d frontend
-
-    - name: Check Streamlit app availability
-      run: |
-        apt-get update -y
-        apt-get install -y wait-for-it
-        wait-for-it http://localhost:8501 -t 60 -- echo "Streamlit app is available"
+volumes:
+  postgres_data:
+  saved_models_data:
