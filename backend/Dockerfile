@@ -12,8 +12,8 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Final stage
-FROM python:3.10-slim-buster AS builder
+# Final stage (Renamed to "final")
+FROM python:3.10-slim-buster AS final
 
 WORKDIR /app
 
