@@ -25,7 +25,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    env:
+    env:  # Correctly moved env to the job level
       VIRTUAL_ENV: venv
       PATH: ${{ github.workspace }}/venv/bin:${{ env.PATH }}
 
@@ -56,9 +56,7 @@ jobs:
         run: |
           python -m venv venv
           pip install --upgrade pip
-          # Install all requirements files if present in multiple directories
           for req in $(find . -name "requirements.txt"); do pip install -r $req; done
-          # Install additional tools
           pip install flake8 black isort pytest pytest-cov
 
       # 5. Lint with flake8
@@ -83,7 +81,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:password@localhost:5432/data_db
         run: |
           alembic upgrade head
-          pytest --cov=./ --cov-report=xml
+          pytest --cov=./ --cov-report=xml -n auto
 
       # 9. Upload coverage report
       - name: Upload Coverage Report
