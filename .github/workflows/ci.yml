@@ -28,7 +28,7 @@ jobs:
     env:
       VIRTUAL_ENV: venv
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-      TEST_DATABASE_URL: postgresql://postgres:password@localhost:5432/data_db_test
+      TEST_DATABASE_URL: postgresql://postgres:password@db:5432/data_db_test
 
     steps:
       # 1. Checkout the repository
@@ -58,18 +58,20 @@ jobs:
         env:
           PGPASSWORD: password
 
-      # 5. Install Alembic
-      - name: Install Alembic
-        run: |
-          pip install alembic
-
-      # 6. Install dependencies
+      # 5. Install Dependencies
       - name: Install Dependencies
         run: |
           python -m venv venv
           pip install --upgrade pip
-          for req in $(find . -name "requirements.txt"); do pip install -r $req; done
-          pip install flake8 black isort pytest pytest-cov
+          pip install pre-commit
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov
+
+      # 6. Install and Run Pre-Commit Hooks
+      - name: Install Pre-Commit Hooks
+        run: |
+          pre-commit install
+          pre-commit run --all-files
 
       # 7. Apply Migrations to Test Database
       - name: Apply Migrations
@@ -90,32 +92,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-
-
-      # 9. Lint with flake8
-      - name: Lint with flake8
-        run: |
-          flake8 backend frontend --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 backend frontend --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
-
-      # 10. Sort imports with isort
-      - name: Sort Imports with isort
-        run: |
-          isort .
-
-      # 11. Format code with black
-      - name: Format with black
-        run: |
-          black --check .
-
-      # 12. Run tests with pytest
+      # 9. Run Tests with pytest
       - name: Run Tests
         run: |
           pytest --cov=backend/app --cov-report=xml
         env:
           TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
-      # 13. Upload coverage report
+      # 10. Upload coverage report
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v3

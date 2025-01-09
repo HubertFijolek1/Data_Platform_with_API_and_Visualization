@@ -1,14 +1,13 @@
 [flake8]
 max-line-length = 88
+extend-ignore = E203, W503
+max-complexity = 20
+select = E9,F63,F7,F82,C901
 exclude =
     .git,
     __pycache__,
-    venv,
-    .venv,
-    */venv/*,
-    */.venv/*,
-    backend/uploads,
-    backend/saved_models,
-    backend/app/tests/__pycache__,
-    backend/app/tests/*.pyc,
-    .pytest_cache,
+    build,
+    dist,
+    migrations,
+    frontend/.venv,
+    backend/.venv
