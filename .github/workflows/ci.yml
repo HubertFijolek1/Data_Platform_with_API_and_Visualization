@@ -63,12 +63,12 @@ jobs:
       - name: Display /etc/hosts
         run: cat /etc/hosts
 
-      # 7. Check User Permissions
-      - name: Check User Permissions
-        run: |
-          psql -h db -p 5432 -U postgres -c "\du"
-        env:
-          PGPASSWORD: password
+#      # 7. Check User Permissions
+#      - name: Check User Permissions
+#        run: |
+#          psql -h db -p 5432 -U postgres -c "\du"
+#        env:
+#          PGPASSWORD: password
 
       # 8. Get PostgreSQL Logs
       - name: Get PostgreSQL Logs
