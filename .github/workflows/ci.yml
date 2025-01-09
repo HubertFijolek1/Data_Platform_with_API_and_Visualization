@@ -40,7 +40,14 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build the Docker image
-      run: docker-compose build
+      run: |
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> backend/.env
+        echo "TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}" >> backend/.env
+        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> backend/.env
+        echo "ALGORITHM=${{ secrets.ALGORITHM }}" >> backend/.env
+        echo "ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}" >> backend/.env
+        echo "BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}" >> backend/.env
+        docker-compose build
 
     - name: Run tests (backend)
       run: docker-compose run backend pytest
