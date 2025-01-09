@@ -28,7 +28,7 @@ jobs:
     env:
       VIRTUAL_ENV: venv
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/data_db_test
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/data_db
       TEST_DATABASE_URL: postgresql://postgres:password@postgres:5432/data_db_test
       pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
       LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
