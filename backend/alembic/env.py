@@ -1,31 +1,21 @@
 import os
-import sys
 from logging.config import fileConfig
-from pathlib import Path
 
 from alembic import context
-from app.database import Base
 from sqlalchemy import engine_from_config, pool
 
-# 1. Add the "backend/" directory to Python path.
-#    This ensures "app/models.py" can be imported as "from app.models import Base"
-current_dir = Path(__file__).resolve()
-backend_dir = current_dir.parents[
-    1
-]  # Move 2 levels up: [alembic/, env.py] => [backend/]
-sys.path.append(str(backend_dir))
+from ..app.database import Base
 
-
-# 2. The Alembic Config object
+# Ustawienia Alembic
 config = context.config
 
-# 3. Configure logging
+# Konfiguracja logowania
 fileConfig(config.config_file_name)
 
-# 4. Metadata for 'autogenerate'
+# Przypisz metadata
 target_metadata = Base.metadata
 
-# 5. Get the DB URL from environment variable "DATABASE_URL"
+# Pobierz URL bazy danych
 database_url = os.getenv("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)

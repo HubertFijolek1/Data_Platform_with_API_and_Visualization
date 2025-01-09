@@ -32,6 +32,7 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:password@postgres:5432/data_db_test
       pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
       LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
+      PGPASSWORD: password
 
     steps:
       # 1. Checkout the repository
@@ -44,24 +45,34 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 3. Wait for PostgreSQL to be ready
+      # 3. List Docker containers (debugging)
+      - name: List Docker Containers
+        run: docker ps -a
+
+      # 4. Wait for PostgreSQL to be ready
       - name: Wait for PostgreSQL
         run: |
-          until pg_isready -h postgres -p 5432 -U postgres; do
+          for i in {1..20}; do
+            pg_isready -h postgres -p 5432 -U postgres && break
             echo "Waiting for PostgreSQL..."
             sleep 5
           done
+
+      # 5. Check PostgreSQL Status
+      - name: Check PostgreSQL Status
+        run: |
+          psql -h postgres -p 5432 -U postgres -c "\l"
         env:
           PGPASSWORD: password
 
-      # 4. Create Test Database
+      # 6. Create Test Database
       - name: Create Test Database
         run: |
           psql -h postgres -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
         env:
           PGPASSWORD: password
 
-      # 5. Install Dependencies
+      # 7. Install Dependencies
       - name: Install Dependencies
         run: |
           python -m venv venv
@@ -69,13 +80,15 @@ jobs:
           pip install pre-commit
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov
-      # 6. Install and Run Pre-Commit Hooks
+        # pre-commit will handle installing flake8, black, isort as specified in .pre-commit-config.yaml
+
+      # 8. Install and Run Pre-Commit Hooks
       - name: Install Pre-Commit Hooks
         run: |
           pre-commit install
           pre-commit run --all-files
 
-      # 7. Apply Migrations to Test Database
+      # 9. Apply Migrations to Test Database
       - name: Apply Migrations
         run: |
           alembic upgrade head
@@ -83,7 +96,7 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         working-directory: ./backend
 
-      # 8. Cache pip dependencies to speed up builds
+      # 10. Cache pip dependencies to speed up builds
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -94,14 +107,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 9. Run Tests with pytest
+      # 11. Run Tests with pytest
       - name: Run Tests
         run: |
           pytest --cov=backend/app --cov-report=xml
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
-      # 10. Upload coverage report
+      # 12. Upload coverage report
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v3
