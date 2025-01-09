@@ -18,20 +18,27 @@ jobs:
           POSTGRES_PASSWORD: password
           POSTGRES_DB: data_db
         ports:
-          - 5433:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          - 5432:5432
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+          test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+#        options: >-
+#          --health-cmd pg_isready
+#          --health-interval 10s
+#          --health-timeout 5s
+#          --health-retries 5
 
     env:
       VIRTUAL_ENV: venv
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
       DATABASE_URL: postgresql://postgres:password@db:5432/data_db
       TEST_DATABASE_URL: postgresql://postgres:password@db:5432/data_db_test
-      pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
-      LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
+#      pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
+#      LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
       PGPASSWORD: password
 
     steps:

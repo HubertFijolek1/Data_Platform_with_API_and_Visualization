@@ -4,9 +4,8 @@ from logging.config import fileConfig
 from pathlib import Path
 
 from alembic import context
+from app.database import Base
 from sqlalchemy import engine_from_config, pool
-
-from ..app.database import Base
 
 # 1. Add the "backend/" directory to Python path.
 #    This ensures "app/models.py" can be imported as "from app.models import Base"
