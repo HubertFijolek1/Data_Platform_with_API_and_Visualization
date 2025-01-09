@@ -28,8 +28,9 @@ jobs:
     env:
       VIRTUAL_ENV: venv
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-      DATABASE_URL: postgresql://postgres:password@db:5432/data_db
-      TEST_DATABASE_URL: postgresql://postgres:password@db:5432/data_db_test
+      # These will be updated later with the runner's IP
+      DATABASE_URL: ""
+      TEST_DATABASE_URL: ""
       pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
       LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
       PGPASSWORD: password
@@ -53,38 +54,48 @@ jobs:
       - name: Connect the service container to the network
         run: docker network connect my_network ${{ job.services.db.id }}
 
-      # 5. Connect the runner to the network
-      - name: Connect the runner to the network
-        run: docker network connect my_network $HOSTNAME
+      # 5. Get the Runner's IP Address on the Network
+      - name: Get Runner IP
+        id: get_runner_ip
+        run: |
+          RUNNER_IP=$(docker network inspect my_network -f '{{range .Containers}}{{if eq .Name "'$HOSTNAME'"}}{{.IPv4Address}}{{end}}{{end}}' | cut -d '/' -f 1)
+          echo "Runner IP: $RUNNER_IP"
+          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
 
-      # 6. List Docker containers (debugging)
+      # 6. Update DATABASE_URLs with Runner IP
+      - name: Update DATABASE_URLs
+        run: |
+          echo "DATABASE_URL=postgresql://postgres:password@$RUNNER_IP:5432/data_db" >> $GITHUB_ENV
+          echo "TEST_DATABASE_URL=postgresql://postgres:password@$RUNNER_IP:5432/data_db_test" >> $GITHUB_ENV
+
+      # 7. List Docker containers (debugging)
       - name: List Docker Containers
         run: docker ps -a
 
-      # 7. Test DB host resolution
+      # 8. Test DB host resolution (This will likely still fail, but that's okay)
       - name: Test DB host resolution
         run: |
           getent hosts db || echo "db not resolvable"
 
-      # 8. Ping db (optional)
+      # 9. Ping db (This will also likely fail, using IP is better)
       - name: Ping db
         run: |
           ping -c 4 db || echo "db not reachable"
 
-      # 9. Display /etc/hosts (optional)
+      # 10. Display /etc/hosts (optional)
       - name: Display /etc/hosts
         run: cat /etc/hosts
 
-      # 10. Get PostgreSQL Logs
+      # 11. Get PostgreSQL Logs
       - name: Get PostgreSQL Logs
         run: |
           docker logs $(docker ps -q --filter "ancestor=postgres:13") || echo "No logs available"
 
-      # 11. Wait for PostgreSQL to be ready
+      # 12. Wait for PostgreSQL to be ready (Use IP for nc)
       - name: Wait for PostgreSQL
         run: |
           for i in {1..20}; do
-            nc -z -v -w 1 db 5432 && echo "PostgreSQL is up!" && break || echo "db:5432 - no response"
+            nc -z -v -w 1 $RUNNER_IP 5432 && echo "PostgreSQL is up!" && break || echo "db:5432 - no response"
             if [[ $i == 20 ]]; then
               echo "PostgreSQL did not start within the expected time."
               exit 1
@@ -93,28 +104,28 @@ jobs:
             sleep 5
           done
 
-      # 12. Check PostgreSQL Status
+      # 13. Check PostgreSQL Status (Use IP for psql)
       - name: Check PostgreSQL Status
         run: |
-          psql -h db -p 5432 -U postgres -c "\l"
+          psql -h $RUNNER_IP -p 5432 -U postgres -c "\l"
         env:
           PGPASSWORD: password
 
-      # 13. Create Test Database
+      # 14. Create Test Database (Use IP for psql)
       - name: Create Test Database
         run: |
-          psql -h db -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
+          psql -h $RUNNER_IP -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
         env:
           PGPASSWORD: password
 
-      # 14. Verify data_db_test exists
+      # 15. Verify data_db_test exists (Use IP for psql)
       - name: Verify data_db_test exists
         run: |
-          psql -h db -p 5432 -U postgres -d data_db_test -c "\dt"
+          psql -h $RUNNER_IP -p 5432 -U postgres -d data_db_test -c "\dt"
         env:
           PGPASSWORD: password
 
-      # 15. Install Dependencies
+      # 16. Install Dependencies
       - name: Install Dependencies
         run: |
           python -m venv venv
@@ -123,13 +134,13 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov
 
-      # 16. Install and Run Pre-Commit Hooks
+      # 17. Install and Run Pre-Commit Hooks
       - name: Install Pre-Commit Hooks
         run: |
           pre-commit install
           pre-commit run --all-files
 
-      # 17. Apply Migrations to Test Database
+      # 18. Apply Migrations to Test Database
       - name: Apply Migrations
         run: |
           alembic upgrade head
@@ -137,7 +148,7 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         working-directory: ./backend
 
-      # 18. Cache pip dependencies to speed up builds
+      # 19. Cache pip dependencies to speed up builds
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -148,14 +159,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 19. Run Tests with pytest
+      # 20. Run Tests with pytest
       - name: Run Tests
         run: |
           pytest --cov=backend/app --cov-report=xml
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
-      # 20. Upload coverage report
+      # 21. Upload coverage report
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
