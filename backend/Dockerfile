@@ -1,26 +1,24 @@
-FROM python:3.10-slim-buster AS builder
+FROM python:3.10-alpine AS builder
 
 WORKDIR /app
 
 ENV PYTHONPATH=/app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends gcc
+# Install build dependencies (Alpine uses apk)
+RUN apk add --update --no-cache gcc musl-dev
 
 # Copy and install Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Final stage (Renamed to "final")
-FROM python:3.10-slim-buster AS final
+# Final stage
+FROM python:3.10-alpine AS final
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends netcat-openbsd && \
-    rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies (if needed)
+# RUN apk add --update --no-cache netcat-openbsd
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
