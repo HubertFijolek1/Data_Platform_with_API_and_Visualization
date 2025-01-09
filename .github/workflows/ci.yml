@@ -49,38 +49,30 @@ jobs:
       - name: List Docker Containers
         run: docker ps -a
 
-      # 4. Download wait-for-it script (optional, for better waiting)
-      - name: Download wait-for-it script
-        run: |
-          curl -o wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
-          chmod +x wait-for-it.sh
-
-      # 5. Wait for PostgreSQL using wait-for-it.sh
+      # 4. Wait for PostgreSQL to be ready
       - name: Wait for PostgreSQL
-        run: ./wait-for-it.sh postgres:5432 --timeout=60 --strict -- echo "PostgreSQL is up"
+        run: |
+          for i in {1..20}; do
+            pg_isready -h postgres -p 5432 -U postgres && break
+            echo "Waiting for PostgreSQL..."
+            sleep 5
+          done
 
-      # 6. Check PostgreSQL Status
+      # 5. Check PostgreSQL Status
       - name: Check PostgreSQL Status
         run: |
           psql -h postgres -p 5432 -U postgres -c "\l"
         env:
           PGPASSWORD: password
 
-      # 7. Create Test Database
+      # 6. Create Test Database
       - name: Create Test Database
         run: |
           psql -h postgres -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
         env:
           PGPASSWORD: password
 
-      # 8. Verify data_db_test exists
-      - name: Verify data_db_test exists
-        run: |
-          psql -h postgres -p 5432 -U postgres -d data_db_test -c "\dt"
-        env:
-          PGPASSWORD: password
-
-      # 9. Install Dependencies
+      # 7. Install Dependencies
       - name: Install Dependencies
         run: |
           python -m venv venv
@@ -88,14 +80,15 @@ jobs:
           pip install pre-commit
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov
+        # pre-commit will handle installing flake8, black, isort as specified in .pre-commit-config.yaml
 
-      # 10. Install and Run Pre-Commit Hooks
+      # 8. Install and Run Pre-Commit Hooks
       - name: Install Pre-Commit Hooks
         run: |
           pre-commit install
           pre-commit run --all-files
 
-      # 11. Apply Migrations to Test Database
+      # 9. Apply Migrations to Test Database
       - name: Apply Migrations
         run: |
           alembic upgrade head
@@ -103,7 +96,7 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         working-directory: ./backend
 
-      # 12. Cache pip dependencies to speed up builds
+      # 10. Cache pip dependencies to speed up builds
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -114,14 +107,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 13. Run Tests with pytest
+      # 11. Run Tests with pytest
       - name: Run Tests
         run: |
           pytest --cov=backend/app --cov-report=xml
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
-      # 14. Upload coverage report
+      # 12. Upload coverage report
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v3
