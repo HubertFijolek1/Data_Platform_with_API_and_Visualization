@@ -25,39 +25,70 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      VIRTUAL_ENV: venv
+      PATH: ${{ github.workspace }}/venv/bin:${{ env.PATH }}
+
     steps:
-    - uses: actions/checkout@v2
+      # 1. Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
+      # 2. Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r backend/requirements.txt
+      # 3. Cache pip dependencies to speed up builds
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: |
+            venv/lib/python3.10/site-packages
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    - name: Lint with flake8
-      run: |
-        source venv/bin/activate
-        pip install flake8
-        flake8 backend/app/
+      # 4. Install dependencies
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          pip install --upgrade pip
+          # Install all requirements files if present in multiple directories
+          for req in $(find . -name "requirements.txt"); do pip install -r $req; done
+          # Install additional tools
+          pip install flake8 black isort pytest pytest-cov
 
-    - name: Format with black
-      run: |
-        source venv/bin/activate
-        pip install black
-        black --check backend/app/
+      # 5. Lint with flake8
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
 
+      # 6. Sort imports with isort
+      - name: Sort Imports with isort
+        run: |
+          isort .
 
-    - name: Run tests
-      env:
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/app_db
-      run: |
-        source venv/bin/activate
-        alembic upgrade head
-        pytest
+      # 7. Format code with black
+      - name: Format with black
+        run: |
+          black --check .
 
+      # 8. Run tests with pytest
+      - name: Run Tests
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/data_db
+        run: |
+          alembic upgrade head
+          pytest --cov=./ --cov-report=xml
+
+      # 9. Upload coverage report
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.xml
