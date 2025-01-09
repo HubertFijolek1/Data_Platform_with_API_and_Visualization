@@ -25,9 +25,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    env:  # Correctly moved env to the job level
+    env:
       VIRTUAL_ENV: venv
-      PATH: ${{ github.workspace }}/venv/bin:${{ env.PATH }}
+      PATH: venv/bin:/usr/local/bin:$PATH  # Updated PATH without referencing undefined env.PATH
 
     steps:
       # 1. Checkout the repository
