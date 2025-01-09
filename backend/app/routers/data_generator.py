@@ -21,6 +21,7 @@ fake = Faker()
 
 logger = logging.getLogger("app")
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -28,7 +29,12 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/generate", response_model=schemas.DatasetRead, dependencies=[Depends(RoleChecker(["admin", "user"]))])
+
+@router.post(
+    "/generate",
+    response_model=schemas.DatasetRead,
+    dependencies=[Depends(RoleChecker(["admin", "user"]))],
+)
 def generate_dataset(n_rows: int = 1000, db: Session = Depends(get_db)):
     """
     Generate a synthetic dataset with fake user data.
@@ -37,8 +43,8 @@ def generate_dataset(n_rows: int = 1000, db: Session = Depends(get_db)):
     data = {
         "name": [fake.name() for _ in range(n_rows)],
         "email": [fake.email() for _ in range(n_rows)],
-        "address": [fake.address().replace('\n', ', ') for _ in range(n_rows)],
-        "created_at": [fake.date_time_this_year().isoformat() for _ in range(n_rows)]
+        "address": [fake.address().replace("\n", ", ") for _ in range(n_rows)],
+        "created_at": [fake.date_time_this_year().isoformat() for _ in range(n_rows)],
     }
     df = pd.DataFrame(data)
 
@@ -46,7 +52,7 @@ def generate_dataset(n_rows: int = 1000, db: Session = Depends(get_db)):
     dataset = models.Dataset(
         name=f"Generated Dataset",
         file_name="",  # Temporary, will update after saving
-        uploaded_at=pd.Timestamp.utcnow()
+        uploaded_at=pd.Timestamp.utcnow(),
     )
     db.add(dataset)
     db.commit()

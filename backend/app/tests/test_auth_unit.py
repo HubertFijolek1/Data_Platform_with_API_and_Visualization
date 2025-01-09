@@ -6,15 +6,17 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 @pytest.fixture
 def mock_db_session():
     return MagicMock()
+
 
 def test_create_user(mock_db_session):
     user_in = UserCreate(
         username="unittest_user",
         email="unittest@example.com",
-        password="unittest_password"
+        password="unittest_password",
     )
 
     # Mock the session's add, commit, refresh
@@ -27,6 +29,7 @@ def test_create_user(mock_db_session):
     assert created_user.username == user_in.username
     assert created_user.email == user_in.email
     assert pwd_context.verify("unittest_password", created_user.hashed_password)
+
 
 def test_verify_password():
     hashed = pwd_context.hash("mysecret")

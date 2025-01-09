@@ -4,9 +4,15 @@ from .preprocessing import preprocess_data
 from .metrics_manager import save_metrics
 import os
 
-from sklearn.metrics import accuracy_score, precision_score, recall_score, mean_squared_error
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    mean_squared_error,
+)
 
 from sklearn.metrics import mean_squared_error
+
 
 def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
     """
@@ -26,23 +32,24 @@ def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.M
 
     # For simplicity, assume all features are numeric already:
     # Build a simple feed-forward network
-    model = keras.Sequential([
-        keras.layers.InputLayer(input_shape=(X.shape[1],)),
-        keras.layers.Dense(16, activation='relu'),
-        keras.layers.Dense(8, activation='relu'),
-        keras.layers.Dense(1, activation='sigmoid')  # Example: binary classification
-    ])
-
-    model.compile(
-        optimizer='adam',
-        loss='binary_crossentropy',
-        metrics=['accuracy']
+    model = keras.Sequential(
+        [
+            keras.layers.InputLayer(input_shape=(X.shape[1],)),
+            keras.layers.Dense(16, activation="relu"),
+            keras.layers.Dense(8, activation="relu"),
+            keras.layers.Dense(
+                1, activation="sigmoid"
+            ),  # Example: binary classification
+        ]
     )
+
+    model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
     # Train the model
     model.fit(X, y, epochs=epochs, batch_size=32, verbose=1)
 
     return model
+
 
 def evaluate_regression_model(model: keras.Model, df: pd.DataFrame, label_column: str):
     """
@@ -56,7 +63,10 @@ def evaluate_regression_model(model: keras.Model, df: pd.DataFrame, label_column
     mse = mean_squared_error(y_true, y_pred)
     return {"mse": mse}
 
-def train_regression_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
+
+def train_regression_model(
+    df: pd.DataFrame, label_column: str, epochs: int = 5
+) -> keras.Model:
     """
     Simple feed-forward network for regression using Keras.
     """
@@ -64,17 +74,16 @@ def train_regression_model(df: pd.DataFrame, label_column: str, epochs: int = 5)
     y = df[label_column].values
     X = df.drop(columns=[label_column]).values
 
-    model = keras.Sequential([
-        keras.layers.InputLayer(input_shape=(X.shape[1],)),
-        keras.layers.Dense(16, activation='relu'),
-        keras.layers.Dense(8, activation='relu'),
-        keras.layers.Dense(1)  # Linear output for regression
-    ])
-
-    model.compile(
-        optimizer='adam',
-        loss='mse'
+    model = keras.Sequential(
+        [
+            keras.layers.InputLayer(input_shape=(X.shape[1],)),
+            keras.layers.Dense(16, activation="relu"),
+            keras.layers.Dense(8, activation="relu"),
+            keras.layers.Dense(1),  # Linear output for regression
+        ]
     )
+
+    model.compile(optimizer="adam", loss="mse")
 
     model.fit(X, y, epochs=epochs, batch_size=32, verbose=1)
     return model
@@ -96,11 +105,8 @@ def evaluate_model(model: keras.Model, df: pd.DataFrame, label_column: str):
     prec = precision_score(y_true, y_pred, zero_division=0)
     rec = recall_score(y_true, y_pred, zero_division=0)
 
-    return {
-        "accuracy": acc,
-        "precision": prec,
-        "recall": rec
-    }
+    return {"accuracy": acc, "precision": prec, "recall": rec}
+
 
 def save_model(model: keras.Model, model_name: str, version: str = "v1"):
     """
@@ -111,6 +117,7 @@ def save_model(model: keras.Model, model_name: str, version: str = "v1"):
     path = os.path.join(base_dir, "model_tf")
     model.save(path)
     return path
+
 
 def load_model(model_name: str, version: str = "v1") -> keras.Model:
     """

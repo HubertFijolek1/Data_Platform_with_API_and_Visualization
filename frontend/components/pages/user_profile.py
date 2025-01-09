@@ -22,7 +22,9 @@ def app():
             st.write(f"### Username: {user['username']}")
             st.write(f"### Email: {user['email']}")
         else:
-            st.error(f"Failed to fetch user profile: {response.json().get('detail', 'Unknown error.')}")
+            st.error(
+                f"Failed to fetch user profile: {response.json().get('detail', 'Unknown error.')}"
+            )
     except requests.exceptions.ConnectionError:
         st.error("Unable to connect to the backend. Please try again later.")
     except Exception as e:
@@ -48,7 +50,9 @@ def app():
             return
 
         try:
-            response = requests.put(f"{BACKEND_URL}/auth/update_profile", json=update_data, headers=headers)
+            response = requests.put(
+                f"{BACKEND_URL}/auth/update_profile", json=update_data, headers=headers
+            )
             if response.status_code == 200:
                 st.success("Profile updated successfully.")
                 if "email" in update_data:
@@ -56,7 +60,9 @@ def app():
                 if "password" in update_data:
                     st.session_state["user_password"] = new_password
             else:
-                st.error(f"Failed to update profile: {response.json().get('detail', 'Unknown error.')}")
+                st.error(
+                    f"Failed to update profile: {response.json().get('detail', 'Unknown error.')}"
+                )
         except requests.exceptions.ConnectionError:
             st.error("Unable to connect to the backend. Please try again later.")
         except Exception as e:

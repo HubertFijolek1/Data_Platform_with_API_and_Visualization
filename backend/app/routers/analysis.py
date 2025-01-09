@@ -7,6 +7,7 @@ router = APIRouter(
     tags=["analysis"],
 )
 
+
 @router.post("/bert-sentiment")
 def bert_sentiment(texts: list[str]):
     """
@@ -16,6 +17,7 @@ def bert_sentiment(texts: list[str]):
         raise HTTPException(status_code=400, detail="No text provided.")
     results = analyze_text_sentiment(texts)
     return results
+
 
 @router.post("/sentiment")
 def sentiment_analysis(texts: list[str]):

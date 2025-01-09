@@ -9,7 +9,14 @@ from dotenv import load_dotenv
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import PlainTextResponse
 
-from .routers import auth_router, data_router, predict_router, ml_ops_router, data_generator_router, data_upload_router
+from .routers import (
+    auth_router,
+    data_router,
+    predict_router,
+    ml_ops_router,
+    data_generator_router,
+    data_upload_router,
+)
 from .config.settings import settings
 
 load_dotenv()
@@ -53,11 +60,13 @@ os.makedirs(uploads_dir, exist_ok=True)  # Creates the directory if it doesn't e
 
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
+
 @app.get("/test-logging")
 def test_logging():
     logger.info("Testing INFO log level.")
     logger.debug("Testing DEBUG log level.")
     return {"message": "Logs have been written to console or file."}
+
 
 @app.exception_handler(RateLimitExceeded)
 def rate_limit_exceeded_handler(request, exc):

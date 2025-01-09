@@ -3,7 +3,7 @@ from .model import (
     evaluate_model,
     save_model,
     load_model,
-    evaluate_regression_model
+    evaluate_regression_model,
 )
 from .preprocessing import preprocess_data
 from .metrics_manager import save_metrics, get_metrics
@@ -23,5 +23,5 @@ __all__ = [
     "SimplePyTorchModel",
     "SimplePyTorchRegressor",
     "SentimentAnalyzer",
-    "analyze_text_sentiment"
+    "analyze_text_sentiment",
 ]

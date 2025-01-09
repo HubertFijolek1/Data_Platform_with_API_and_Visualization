@@ -34,20 +34,23 @@ def app():
             st.error("Please provide a dataset name and upload a file.")
             return
 
-        files = {
-            "file": (file.name, file.getvalue(), file.type)
-        }
+        files = {"file": (file.name, file.getvalue(), file.type)}
         data = {
             "name": name,
             "train": train,
-            "label_column": label_column if train else None
+            "label_column": label_column if train else None,
         }
 
         headers = {"Authorization": f"Bearer {st.session_state.get('auth_token', '')}"}
 
         with st.spinner("Uploading dataset..."):
             try:
-                response = requests.post(f"{BACKEND_URL}/data/upload", data=data, files=files, headers=headers)
+                response = requests.post(
+                    f"{BACKEND_URL}/data/upload",
+                    data=data,
+                    files=files,
+                    headers=headers,
+                )
                 if response.status_code == 200:
                     dataset = response.json()
                     st.success(f"Dataset '{dataset['name']}' uploaded successfully!")
@@ -55,7 +58,9 @@ def app():
                     if train:
                         st.info("Model training has been initiated.")
                 else:
-                    st.error(f"Failed to upload dataset: {response.json().get('detail', 'Unknown error.')}")
+                    st.error(
+                        f"Failed to upload dataset: {response.json().get('detail', 'Unknown error.')}"
+                    )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")
             except Exception as e:

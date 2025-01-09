@@ -4,6 +4,7 @@ from requests.exceptions import RequestException
 import os
 import time
 
+
 def app():
     st.title("Register")
 
@@ -13,7 +14,9 @@ def app():
         username = st.text_input("Username", max_chars=50)
         email = st.text_input("Email", max_chars=100)
         password = st.text_input("Password", type="password", max_chars=100)
-        confirm_password = st.text_input("Confirm Password", type="password", max_chars=100)
+        confirm_password = st.text_input(
+            "Confirm Password", type="password", max_chars=100
+        )
         submit = st.form_submit_button("Register")
 
     if submit:
@@ -35,11 +38,7 @@ def app():
         register_endpoint = f"{BACKEND_URL}/auth/register"
 
         # Prepare payload
-        payload = {
-            "username": username,
-            "email": email,
-            "password": password
-        }
+        payload = {"username": username, "email": email, "password": password}
 
         try:
             response = requests.post(register_endpoint, json=payload)

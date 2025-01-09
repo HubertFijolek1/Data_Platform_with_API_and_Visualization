@@ -22,11 +22,13 @@ def app():
         response = requests.get(f"{BACKEND_URL}/data/", headers=headers)
         if response.status_code == 200:
             datasets = response.json()
-            dataset_names = [dataset['name'] for dataset in datasets]
+            dataset_names = [dataset["name"] for dataset in datasets]
             selected_dataset = st.selectbox("Select Dataset", dataset_names)
 
             # Find selected dataset details
-            selected = next((d for d in datasets if d['name'] == selected_dataset), None)
+            selected = next(
+                (d for d in datasets if d["name"] == selected_dataset), None
+            )
 
             if selected:
                 # Fetch the dataset file
@@ -39,7 +41,9 @@ def app():
                 # Example Visualization
                 st.write("### Data Visualization")
                 if not data.empty:
-                    chart_type = st.selectbox("Select Chart Type", ["Line", "Bar", "Scatter", "Histogram"])
+                    chart_type = st.selectbox(
+                        "Select Chart Type", ["Line", "Bar", "Scatter", "Histogram"]
+                    )
                     columns = data.columns.tolist()
                     if len(columns) >= 2:
                         x_axis = st.selectbox("Select X-axis", columns)
@@ -66,7 +70,9 @@ def app():
                 else:
                     st.warning("Selected dataset is empty.")
         else:
-            st.error(f"Failed to fetch datasets: {response.json().get('detail', 'Unknown error.')}")
+            st.error(
+                f"Failed to fetch datasets: {response.json().get('detail', 'Unknown error.')}"
+            )
     except requests.exceptions.ConnectionError:
         st.error("Unable to connect to the backend. Please try again later.")
     except Exception as e:

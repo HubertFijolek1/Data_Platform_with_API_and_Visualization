@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from ..routers.auth import get_current_user
 from .. import models
 
+
 class RoleChecker:
     def __init__(self, allowed_roles: list):
         self.allowed_roles = allowed_roles

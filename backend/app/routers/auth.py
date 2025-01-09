@@ -4,7 +4,12 @@ from .. import schemas
 from ..database import SessionLocal
 from ..models import User
 from ..services.auth_service import login_user
-from ..crud import get_user_by_email, get_user_by_username, create_user, get_password_hash
+from ..crud import (
+    get_user_by_email,
+    get_user_by_username,
+    create_user,
+    get_password_hash,
+)
 from ..config.settings import settings
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -19,6 +24,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 logger = logging.getLogger("app")
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -26,14 +32,19 @@ def get_db():
     finally:
         db.close()
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
@@ -46,6 +57,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     logger.info(f"Authenticated user: {user.username}")
     return user
+
 
 @router.post("/register", response_model=schemas.UserRead)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -62,6 +74,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     logger.info(f"User registered successfully: {created_user.username}")
     return created_user
 
+
 @router.post("/login", response_model=schemas.Token)
 def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     logger.debug(f"Login attempt for email: {credentials.email}")
@@ -73,17 +86,19 @@ def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
         logger.warning(f"Login failed for email: {credentials.email} - {e.detail}")
         raise e
 
+
 @router.get("/me", response_model=schemas.UserRead)
 def read_users_me(current_user: User = Depends(get_current_user)):
     logger.debug(f"Fetching profile for user: {current_user.username}")
     return current_user
+
 
 @router.put("/update_profile")
 def update_profile(
     email: str = None,
     password: str = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update the current user's email or password (or both).
@@ -94,8 +109,12 @@ def update_profile(
         # Check if email is already taken
         existing_user = get_user_by_email(db, email=email)
         if existing_user and existing_user.id != current_user.id:
-            logger.warning(f"Email update failed: {email} already registered by another user.")
-            raise HTTPException(status_code=400, detail="Email already registered by another user.")
+            logger.warning(
+                f"Email update failed: {email} already registered by another user."
+            )
+            raise HTTPException(
+                status_code=400, detail="Email already registered by another user."
+            )
         current_user.email = email
         updated = True
 

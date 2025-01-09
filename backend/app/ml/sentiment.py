@@ -2,6 +2,7 @@ import re
 import pandas as pd
 from textblob import TextBlob
 
+
 class SentimentAnalyzer:
     """
     Simple demonstration of a custom sentiment analysis module
@@ -24,7 +25,7 @@ class SentimentAnalyzer:
         blob = TextBlob(cleaned)
         return {
             "polarity": blob.sentiment.polarity,
-            "subjectivity": blob.sentiment.subjectivity
+            "subjectivity": blob.sentiment.subjectivity,
         }
 
     def batch_analyze(self, texts: list[str]) -> list[dict]:

@@ -4,8 +4,11 @@ import pandas as pd
 from ..headers import show_header
 from ..footers import show_footer
 
+
 def app():
-    show_header("Make Predictions", "Use a trained model to make predictions on your data.")
+    show_header(
+        "Make Predictions", "Use a trained model to make predictions on your data."
+    )
 
     # Check if user is authenticated
     if "auth_token" not in st.session_state:
@@ -33,22 +36,26 @@ def app():
         # Prepare payload
         payload = {
             "model_name": model_name,
-            "data": [
-                {"feature1": feature1, "feature2": feature2}
-            ]
+            "data": [{"feature1": feature1, "feature2": feature2}],
         }
 
         # Make API call to predict
         with st.spinner("Making prediction..."):
             try:
-                response = requests.post(f"{BACKEND_URL}/predict/", json=payload, headers=headers)
+                response = requests.post(
+                    f"{BACKEND_URL}/predict/", json=payload, headers=headers
+                )
                 if response.status_code == 200:
                     prediction = response.json()
                     st.success("Prediction successful!")
                     st.write(f"**Predicted Label:** {prediction['predictions'][0]}")
-                    st.write(f"**Prediction Probability:** {prediction['probabilities'][0]:.2f}")
+                    st.write(
+                        f"**Prediction Probability:** {prediction['probabilities'][0]:.2f}"
+                    )
                 else:
-                    st.error(f"Prediction failed: {response.json().get('detail', 'Unknown error.')}")
+                    st.error(
+                        f"Prediction failed: {response.json().get('detail', 'Unknown error.')}"
+                    )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")
             except Exception as e:
@@ -56,7 +63,9 @@ def app():
 
     # Option 2: Batch Predictions via File Upload
     st.subheader("Batch Predictions via File Upload")
-    uploaded_file = st.file_uploader("Upload CSV file for batch predictions", type=["csv"])
+    uploaded_file = st.file_uploader(
+        "Upload CSV file for batch predictions", type=["csv"]
+    )
 
     if uploaded_file is not None:
         try:
@@ -68,20 +77,19 @@ def app():
                 # Convert DataFrame to list of dicts
                 data_payload = data_df.to_dict(orient="records")
 
-                payload = {
-                    "model_name": model_name,
-                    "data": data_payload
-                }
+                payload = {"model_name": model_name, "data": data_payload}
 
                 with st.spinner("Making batch predictions..."):
-                    response = requests.post(f"{BACKEND_URL}/predict/", json=payload, headers=headers)
+                    response = requests.post(
+                        f"{BACKEND_URL}/predict/", json=payload, headers=headers
+                    )
                     if response.status_code == 200:
                         prediction = response.json()
-                        predictions = prediction['predictions']
-                        probabilities = prediction['probabilities']
+                        predictions = prediction["predictions"]
+                        probabilities = prediction["probabilities"]
                         results_df = data_df.copy()
-                        results_df['Predicted Label'] = predictions
-                        results_df['Prediction Probability'] = probabilities
+                        results_df["Predicted Label"] = predictions
+                        results_df["Prediction Probability"] = probabilities
                         st.success("Batch prediction successful!")
                         st.write("Prediction Results:")
                         st.dataframe(results_df)
@@ -90,11 +98,13 @@ def app():
                         st.download_button(
                             label="Download Predictions as CSV",
                             data=csv,
-                            file_name='predictions.csv',
-                            mime='text/csv',
+                            file_name="predictions.csv",
+                            mime="text/csv",
                         )
                     else:
-                        st.error(f"Batch prediction failed: {response.json().get('detail', 'Unknown error.')}")
+                        st.error(
+                            f"Batch prediction failed: {response.json().get('detail', 'Unknown error.')}"
+                        )
         except Exception as e:
             st.error(f"Error processing the uploaded file: {e}")
 

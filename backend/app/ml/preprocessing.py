@@ -2,6 +2,7 @@ import pandas as pd
 from typing import Optional
 from .feature_engineering import add_new_feature
 
+
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Example preprocessing function that will be expanded:

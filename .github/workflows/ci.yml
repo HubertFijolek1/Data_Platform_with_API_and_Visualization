@@ -52,10 +52,6 @@ jobs:
         pip install black
         black --check backend/app/
 
-    - name: Initialize Airflow DB
-      run: |
-        source venv/bin/activate
-        airflow db init
 
     - name: Run tests
       env:

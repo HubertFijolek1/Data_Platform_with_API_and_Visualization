@@ -8,12 +8,11 @@ from app import models
 # PostgreSQL test database URL
 DATABASE_URL = "postgresql://postgres:password@localhost:5432/data_db"
 
-engine = create_engine(
-    DATABASE_URL
-)
+engine = create_engine(DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base.metadata.create_all(bind=engine)
+
 
 def override_get_db():
     try:
@@ -22,14 +21,20 @@ def override_get_db():
     finally:
         db.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
+
 def test_register_user():
     response = client.post(
         "/auth/register",
-        json={"username": "testuser", "email": "test@example.com", "password": "testpassword"}
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword",
+        },
     )
     assert response.status_code == 200
     assert response.json()["username"] == "testuser"
@@ -38,7 +43,11 @@ def test_register_user():
     # Próba rejestracji z tym samym email
     response = client.post(
         "/auth/register",
-        json={"username": "testuser2", "email": "test@example.com", "password": "testpassword2"}
+        json={
+            "username": "testuser2",
+            "email": "test@example.com",
+            "password": "testpassword2",
+        },
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Email already registered"
@@ -46,23 +55,36 @@ def test_register_user():
     # Próba rejestracji z tym samym username
     response = client.post(
         "/auth/register",
-        json={"username": "testuser", "email": "test2@example.com", "password": "testpassword2"}
+        json={
+            "username": "testuser",
+            "email": "test2@example.com",
+            "password": "testpassword2",
+        },
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Username already taken"
+
 
 def test_login_user():
     # Najpierw zarejestruj użytkownika
     response = client.post(
         "/auth/register",
-        json={"username": "loginuser", "email": "login@example.com", "password": "loginpassword"}
+        json={
+            "username": "loginuser",
+            "email": "login@example.com",
+            "password": "loginpassword",
+        },
     )
     assert response.status_code == 200
 
     # Poprawne logowanie
     response = client.post(
         "/auth/login",
-        json={"username": "loginuser", "email": "login@example.com", "password": "loginpassword"}
+        json={
+            "username": "loginuser",
+            "email": "login@example.com",
+            "password": "loginpassword",
+        },
     )
     assert response.status_code == 200
     assert "access_token" in response.json()
@@ -71,7 +93,11 @@ def test_login_user():
     # Logowanie z błędnym hasłem
     response = client.post(
         "/auth/login",
-        json={"username": "loginuser", "email": "login@example.com", "password": "wrongpassword"}
+        json={
+            "username": "loginuser",
+            "email": "login@example.com",
+            "password": "wrongpassword",
+        },
     )
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid credentials"
@@ -79,7 +105,11 @@ def test_login_user():
     # Logowanie z nieistniejącym użytkownikiem
     response = client.post(
         "/auth/login",
-        json={"username": "nonuser", "email": "non@example.com", "password": "nopassword"}
+        json={
+            "username": "nonuser",
+            "email": "non@example.com",
+            "password": "nopassword",
+        },
     )
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid credentials"

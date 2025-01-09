@@ -9,7 +9,9 @@ from alembic import context
 # 1. Add the "backend/" directory to Python path.
 #    This ensures "app/models.py" can be imported as "from app.models import Base"
 current_dir = Path(__file__).resolve()
-backend_dir = current_dir.parents[1]  # Move 2 levels up: [alembic/, env.py] => [backend/]
+backend_dir = current_dir.parents[
+    1
+]  # Move 2 levels up: [alembic/, env.py] => [backend/]
 sys.path.append(str(backend_dir))
 
 from app.database import Base
@@ -27,6 +29,7 @@ target_metadata = Base.metadata
 database_url = os.getenv("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
+
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
@@ -51,13 +54,11 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

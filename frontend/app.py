@@ -7,9 +7,10 @@ from components.pages import (
     user_profile,
     generate_data,
     predict_page,
-    model_metrics
+    model_metrics,
 )
 from components.navbar import show_navbar
+
 
 def main():
     st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
@@ -28,6 +29,7 @@ def main():
 
     # Show the navbar
     show_navbar()
+
 
 if __name__ == "__main__":
     main()

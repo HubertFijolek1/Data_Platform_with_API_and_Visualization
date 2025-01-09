@@ -3,6 +3,7 @@ import requests
 from ..headers import show_header
 from ..footers import show_footer
 
+
 def app():
     show_header("Model Performance Metrics", "View metrics of my trained models.")
 
@@ -38,13 +39,12 @@ def app():
         st.stop()
 
     if st.button("Fetch Metrics"):
-        payload = {
-            "model_name": model_name,
-            "version": version
-        }
+        payload = {"model_name": model_name, "version": version}
         with st.spinner("Fetching metrics..."):
             try:
-                response_metrics = requests.get(f"{BACKEND_URL}/ml/metrics/{model_name}/{version}", headers=headers)
+                response_metrics = requests.get(
+                    f"{BACKEND_URL}/ml/metrics/{model_name}/{version}", headers=headers
+                )
                 if response_metrics.status_code == 200:
                     metrics = response_metrics.json()
                     st.success("Metrics fetched successfully!")
@@ -60,7 +60,9 @@ def app():
                     if "mse" in metrics:
                         st.write(f"**Mean Squared Error (MSE):** {metrics['mse']:.2f}")
                 else:
-                    st.error(f"Failed to fetch metrics: {response_metrics.json().get('detail', 'Unknown error.')}")
+                    st.error(
+                        f"Failed to fetch metrics: {response_metrics.json().get('detail', 'Unknown error.')}"
+                    )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")
             except Exception as e:

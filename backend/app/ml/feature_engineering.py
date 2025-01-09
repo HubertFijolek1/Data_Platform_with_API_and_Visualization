@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def add_new_feature(df: pd.DataFrame) -> pd.DataFrame:
     """
     Example function that creates or modifies columns in the DataFrame.

@@ -5,7 +5,7 @@ from .schemas import (
     TokenData,
     DatasetCreate,
     DatasetRead,
-    UserLogin
+    UserLogin,
 )
 
 __all__ = [
@@ -15,5 +15,5 @@ __all__ = [
     "TokenData",
     "DatasetCreate",
     "DatasetRead",
-    "UserLogin"
+    "UserLogin",
 ]

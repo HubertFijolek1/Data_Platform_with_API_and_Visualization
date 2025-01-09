@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from ..config.settings import settings
 
+
 def authenticate_user(db: Session, email: str, password: str) -> User:
     user = crud.get_user_by_email(db, email=email)
     if not user:
@@ -14,11 +15,15 @@ def authenticate_user(db: Session, email: str, password: str) -> User:
         return None
     return user
 
+
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
 
 def login_user(credentials: schemas.UserLogin, db: Session) -> str:
     user = authenticate_user(db, credentials.email, credentials.password)

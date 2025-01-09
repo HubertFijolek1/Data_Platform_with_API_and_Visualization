@@ -11,5 +11,5 @@ __all__ = [
     "predict_router",
     "ml_ops_router",
     "data_generator_router",
-    "data_upload_router"
+    "data_upload_router",
 ]

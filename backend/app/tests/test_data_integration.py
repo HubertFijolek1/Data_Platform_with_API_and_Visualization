@@ -14,7 +14,12 @@ def client():
 
     # Create a test user
     db = SessionLocal()
-    user = User(username="testuser", email="testuser@example.com", hashed_password="fakehashed", role="admin")
+    user = User(
+        username="testuser",
+        email="testuser@example.com",
+        hashed_password="fakehashed",
+        role="admin",
+    )
     db.add(user)
     db.commit()
     db.refresh(user)

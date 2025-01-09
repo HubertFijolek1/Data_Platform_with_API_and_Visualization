@@ -17,10 +17,7 @@ def app():
             st.error("Please enter both email and password.")
             return
 
-        data = {
-            "email": email,
-            "password": password
-        }
+        data = {"email": email, "password": password}
 
         with st.spinner("Logging in..."):
             try:

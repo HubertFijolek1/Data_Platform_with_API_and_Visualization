@@ -3,7 +3,17 @@ import uuid
 from typing import List
 import pandas as pd
 
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Query, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    File,
+    UploadFile,
+    Form,
+    Query,
+    Request,
+)
 from sqlalchemy.orm import Session
 
 from .. import schemas, models
@@ -16,10 +26,12 @@ from slowapi.util import get_remote_address
 from ..utils.rate_limiter import limiter
 
 from ..ml.model import train_model, save_model
+
 router = APIRouter(
     prefix="/data",
     tags=["data"],
 )
+
 
 def get_db():
     db = SessionLocal()
@@ -28,11 +40,12 @@ def get_db():
     finally:
         db.close()
 
+
 @router.post(
     "/upload",
     response_model=schemas.DatasetRead,
     summary="Upload a dataset file",
-    description="Upload a CSV or TXT file and store metadata in the database."
+    description="Upload a CSV or TXT file and store metadata in the database.",
 )
 def upload_dataset(
     name: str = Form(...),  # Part of normal form data
@@ -40,16 +53,16 @@ def upload_dataset(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),  # Requires login
     train: bool = Form(False),
-    label_column: str = Form(None)
+    label_column: str = Form(None),
 ):
     """
     Endpoint to upload a dataset file and store relevant metadata in the DB.
     """
 
-    if not file.filename.lower().endswith(('.csv', '.txt')):
+    if not file.filename.lower().endswith((".csv", ".txt")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only CSV or TXT files are allowed."
+            detail="Only CSV or TXT files are allowed.",
         )
 
     unique_id = str(uuid.uuid4())
@@ -62,10 +75,7 @@ def upload_dataset(
     with open(file_location, "wb") as f:
         f.write(file.file.read())
 
-    dataset = models.Dataset(
-        name=name,
-        file_name=file_name
-    )
+    dataset = models.Dataset(name=name, file_name=file_name)
     db.add(dataset)
     db.commit()
     db.refresh(dataset)
@@ -74,9 +84,8 @@ def upload_dataset(
     if train:
         if not label_column:
             raise HTTPException(
-                            status_code=400,
-                        detail = "label_column is required when train=True."
-                                              )
+                status_code=400, detail="label_column is required when train=True."
+            )
         file_df = pd.read_csv(file_location)  # For simplicity
         model = train_model(file_df, label_column=label_column, epochs=5)
         model_name = f"{name}_model"
@@ -89,7 +98,7 @@ def upload_dataset(
     "/",
     response_model=List[schemas.DatasetRead],
     summary="List all datasets (paginated)",
-    description="Retrieve a paginated list of datasets."
+    description="Retrieve a paginated list of datasets.",
 )
 def get_all_datasets(
     page: int = Query(1, ge=1, description="Page number (starts at 1)"),
@@ -104,11 +113,12 @@ def get_all_datasets(
     datasets = db.query(models.Dataset).offset(skip).limit(page_size).all()
     return datasets
 
+
 @router.get(
     "/{dataset_id}",
     response_model=schemas.DatasetRead,
     summary="Get dataset by ID",
-    description="Retrieve a specific dataset by its ID."
+    description="Retrieve a specific dataset by its ID.",
 )
 def get_dataset(
     dataset_id: int,
@@ -122,15 +132,16 @@ def get_dataset(
     if not dataset:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dataset with id {dataset_id} not found."
+            detail=f"Dataset with id {dataset_id} not found.",
         )
     return dataset
+
 
 @router.delete(
     "/{dataset_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a dataset by ID",
-    description="Delete a specific dataset by its ID (admin only)."
+    description="Delete a specific dataset by its ID (admin only).",
 )
 def delete_dataset(
     dataset_id: int,
@@ -146,7 +157,7 @@ def delete_dataset(
     if not dataset:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dataset with id {dataset_id} not found."
+            detail=f"Dataset with id {dataset_id} not found.",
         )
 
     # IT also remove the file from disk if it exists:
@@ -157,6 +168,7 @@ def delete_dataset(
     db.delete(dataset)
     db.commit()
     return  # 204 No Content means success without response body
+
 
 # @router.get("/limited")
 # @limiter.limit("5/minute")  # only 5 calls allowed per minute

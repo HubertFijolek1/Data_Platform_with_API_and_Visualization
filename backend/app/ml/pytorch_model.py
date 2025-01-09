@@ -5,16 +5,20 @@ import pandas as pd
 from .preprocessing import preprocess_data
 import os
 
+
 class SimplePyTorchModel(nn.Module):
     def __init__(self, input_dim, hidden_dim=16):
         super(SimplePyTorchModel, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, 1)  # Example: single output for binary classification
+        self.fc2 = nn.Linear(
+            hidden_dim, 1
+        )  # Example: single output for binary classification
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.sigmoid(self.fc2(x))
         return x
+
 
 def train_pytorch_classifier(df: pd.DataFrame, label_column: str, epochs=5):
     """
@@ -40,10 +44,11 @@ def train_pytorch_classifier(df: pd.DataFrame, label_column: str, epochs=5):
         loss.backward()
         optimizer.step()
 
-        if (epoch+1) % 1 == 0:
+        if (epoch + 1) % 1 == 0:
             print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}")
 
     return model
+
 
 class SimplePyTorchRegressor(nn.Module):
     def __init__(self, input_dim, hidden_dim=16):
@@ -55,6 +60,7 @@ class SimplePyTorchRegressor(nn.Module):
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)  # no activation for regression
         return x
+
 
 def train_pytorch_regressor(df: pd.DataFrame, label_column: str, epochs=5):
     """
@@ -82,6 +88,7 @@ def train_pytorch_regressor(df: pd.DataFrame, label_column: str, epochs=5):
 
     return model
 
+
 def save_pytorch_model(model: nn.Module, model_name: str, version: str = "v1"):
     """
     Save a trained PyTorch model to 'saved_models/{model_name}/{version}/model_pt.pt'.
@@ -91,6 +98,7 @@ def save_pytorch_model(model: nn.Module, model_name: str, version: str = "v1"):
     path = os.path.join(base_dir, "model_pt.pt")
     torch.save(model.state_dict(), path)
     return path
+
 
 def load_pytorch_model(model_class, model_name: str, version: str = "v1"):
     """

@@ -16,10 +16,8 @@ from ..ml.model import train_model, save_model
 from ..ml.model import evaluate_model
 from ..ml.metrics_manager import save_metrics
 
-router = APIRouter(
-    prefix="/ml",
-    tags=["ml_ops"]
-)
+router = APIRouter(prefix="/ml", tags=["ml_ops"])
+
 
 def get_db():
     db = SessionLocal()
@@ -28,13 +26,14 @@ def get_db():
     finally:
         db.close()
 
+
 @router.post("/retrain")
 def retrain_model(
     dataset_id: int,
     label_column: str,
     model_name: str,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """
     Retrain a model with a given dataset (by dataset_id).
@@ -44,15 +43,14 @@ def retrain_model(
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(
-            status_code=404,
-            detail=f"Dataset with id {dataset_id} not found."
+            status_code=404, detail=f"Dataset with id {dataset_id} not found."
         )
 
     file_path = os.path.join("uploads", dataset.file_name)
     if not os.path.exists(file_path):
         raise HTTPException(
             status_code=404,
-            detail=f"File for dataset_id {dataset_id} not found on disk."
+            detail=f"File for dataset_id {dataset_id} not found on disk.",
         )
 
     # Load data
@@ -60,7 +58,7 @@ def retrain_model(
     if label_column not in df.columns:
         raise HTTPException(
             status_code=400,
-            detail=f"label_column '{label_column}' not found in dataset."
+            detail=f"label_column '{label_column}' not found in dataset.",
         )
 
     model = train_model(df, label_column=label_column, epochs=5)
@@ -71,11 +69,9 @@ def retrain_model(
     save_metrics(model_name, "v1", metrics)
     return {"message": "Model retrained successfully", "model_saved_path": path}
 
+
 @router.get("/performance")
-def get_model_performance(
-    model_name: str,
-    version: str = "v1"
-):
+def get_model_performance(model_name: str, version: str = "v1"):
     """
     Return stored model metrics for the given model_name and version.
     """
@@ -83,9 +79,10 @@ def get_model_performance(
     if metrics is None:
         raise HTTPException(
             status_code=404,
-            detail=f"No metrics found for {model_name} version {version}."
+            detail=f"No metrics found for {model_name} version {version}.",
         )
     return metrics
+
 
 @router.get("/models", response_model=List[str], tags=["ml_ops"])
 def list_models(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
@@ -95,15 +92,28 @@ def list_models(db: Session = Depends(get_db), current_user=Depends(get_current_
     saved_models_dir = "saved_models"
     if not os.path.exists(saved_models_dir):
         return []
-    model_names = [name for name in os.listdir(saved_models_dir) if os.path.isdir(os.path.join(saved_models_dir, name))]
+    model_names = [
+        name
+        for name in os.listdir(saved_models_dir)
+        if os.path.isdir(os.path.join(saved_models_dir, name))
+    ]
     return model_names
 
+
 @router.get("/metrics/{model_name}/{version}", response_model=dict, tags=["ml_ops"])
-def get_model_metrics(model_name: str, version: str = "v1", db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def get_model_metrics(
+    model_name: str,
+    version: str = "v1",
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     """
     Retrieve performance metrics for a specified model and version.
     """
     metrics = get_metrics(model_name, version)
     if metrics is None:
-        raise HTTPException(status_code=404, detail="Metrics not found for the specified model and version.")
+        raise HTTPException(
+            status_code=404,
+            detail="Metrics not found for the specified model and version.",
+        )
     return metrics

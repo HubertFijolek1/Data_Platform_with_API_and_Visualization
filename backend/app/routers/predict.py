@@ -1,19 +1,20 @@
 from fastapi import APIRouter, HTTPException
-#from pydantic import BaseModel
+
+# from pydantic import BaseModel
 import pandas as pd
 
 from ..ml.model import load_model
-#from typing import List, Union
+
+# from typing import List, Union
 
 from ..schemas.schemas_ml import PredictionRequest, PredictionResponse
-router = APIRouter(
-    prefix="/predict",
-    tags=["predict"]
-)
 
-#class PredictionInput(BaseModel):
+router = APIRouter(prefix="/predict", tags=["predict"])
+
+# class PredictionInput(BaseModel):
 #    data: List[dict]  # Each dict is a row of input data
 #    model_name: str
+
 
 @router.post("/", response_model=PredictionResponse)
 def predict(input_data: PredictionRequest):
@@ -27,7 +28,9 @@ def predict(input_data: PredictionRequest):
     model = load_model(input_data.model_name)
 
     if not model:
-        raise HTTPException(status_code=404, detail=f"Model '{input_data.model_name}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Model '{input_data.model_name}' not found."
+        )
 
     # Convert list-of-dicts to a DataFrame
     df = pd.DataFrame(input_data.data)
@@ -51,6 +54,5 @@ def predict(input_data: PredictionRequest):
     y_pred_probs_list = y_pred_probs.flatten().tolist()
 
     return PredictionResponse(
-        predictions=y_pred_labels,
-        probabilities=y_pred_probs_list
+        predictions=y_pred_labels, probabilities=y_pred_probs_list
     )
