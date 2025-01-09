@@ -30,9 +30,10 @@ jobs:
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
       DATABASE_URL: postgresql://postgres:password@db:5432/data_db
       TEST_DATABASE_URL: postgresql://postgres:password@db:5432/data_db_test
-#      pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
-#      LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
       PGPASSWORD: password
+      PYTHONPATH: ./backend
+      #      pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
+      #      LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
 
     steps:
       # 1. Checkout the repository
@@ -53,6 +54,11 @@ jobs:
       - name: Test DB host resolution
         run: |
           getent hosts db || echo "db not resolvable"
+
+      - name: Debug Python Path
+        run: |
+          echo "PYTHONPATH: $PYTHONPATH"
+          python -c "import sys; print(sys.path)"
 
       # 5. Ping db (optional)
       - name: Ping db
