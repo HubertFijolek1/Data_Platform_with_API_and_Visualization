@@ -19,7 +19,6 @@ jobs:
           POSTGRES_DB: data_db
         ports:
           - 5432:5432
-        # Assign a static IP on the custom network
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -31,7 +30,6 @@ jobs:
     env:
       VIRTUAL_ENV: venv
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-      # Use the static IP for the database
       DATABASE_URL: postgresql://postgres:password@172.19.0.2:5432/data_db
       TEST_DATABASE_URL: postgresql://postgres:password@172.19.0.2:5432/data_db_test
       pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
@@ -49,24 +47,31 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 3. Create a Docker network (make sure subnet matches the static IP)
+      # 3. Create a Docker network
       - name: Create a Docker network
         run: docker network create --subnet=172.19.0.0/16 my_network
 
-      # 4. List Docker containers (debugging)
-      - name: List Docker Containers
+      # 4. List Docker containers BEFORE starting services (for debugging)
+      - name: List Docker Containers (Before)
         run: docker ps -a
 
-      # 5. Display /etc/hosts (optional)
-      - name: Display /etc/hosts
-        run: cat /etc/hosts
-
-      # 6. Get PostgreSQL Logs
-      - name: Get PostgreSQL Logs
+      # 5. Get PostgreSQL Logs (BEFORE starting services)
+      - name: Get PostgreSQL Logs (Before)
         run: |
-          docker logs $(docker ps -q --filter "ancestor=postgres:13") || echo "No logs available"
+          docker logs $(docker ps -aq --filter "ancestor=postgres:13") || echo "No logs available (before service start)"
 
-      # 7. Wait for PostgreSQL to be ready (Use IP for nc)
+      # --- Service container 'db' will start here ---
+
+      # 6. List Docker containers AFTER starting services
+      - name: List Docker Containers (After)
+        run: docker ps -a
+
+      # 7. Get PostgreSQL Logs (AFTER service start)
+      - name: Get PostgreSQL Logs (After)
+        run: |
+          docker logs $(docker ps -q --filter "ancestor=postgres:13") || echo "No logs available (after service start)"
+
+      # 8. Wait for PostgreSQL to be ready
       - name: Wait for PostgreSQL
         run: |
           for i in {1..20}; do
@@ -79,28 +84,28 @@ jobs:
             sleep 5
           done
 
-      # 8. Check PostgreSQL Status (Use IP for psql)
+      # 9. Check PostgreSQL Status
       - name: Check PostgreSQL Status
         run: |
           psql -h 172.19.0.2 -p 5432 -U postgres -c "\l"
         env:
           PGPASSWORD: password
 
-      # 9. Create Test Database (Use IP for psql)
+      # 10. Create Test Database
       - name: Create Test Database
         run: |
           psql -h 172.19.0.2 -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
         env:
           PGPASSWORD: password
 
-      # 10. Verify data_db_test exists (Use IP for psql)
+      # 11. Verify data_db_test exists
       - name: Verify data_db_test exists
         run: |
           psql -h 172.19.0.2 -p 5432 -U postgres -d data_db_test -c "\dt"
         env:
           PGPASSWORD: password
 
-      # 11. Install Dependencies
+      # 12. Install Dependencies
       - name: Install Dependencies
         run: |
           python -m venv venv
@@ -109,13 +114,13 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov
 
-      # 12. Install and Run Pre-Commit Hooks
+      # 13. Install and Run Pre-Commit Hooks
       - name: Install Pre-Commit Hooks
         run: |
           pre-commit install
           pre-commit run --all-files
 
-      # 13. Apply Migrations to Test Database
+      # 14. Apply Migrations to Test Database
       - name: Apply Migrations
         run: |
           alembic upgrade head
@@ -123,7 +128,7 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         working-directory: ./backend
 
-      # 14. Cache pip dependencies to speed up builds
+      # 15. Cache pip
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -134,17 +139,23 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 15. Run Tests with pytest
+      # 16. Run Tests with pytest
       - name: Run Tests
         run: |
           pytest --cov=backend/app --cov-report=xml
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
-      # 16. Upload coverage report
+      # 17. Upload coverage report
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
+
+      # 18. Cleanup: Stop and remove containers
+      - name: Stop and Remove Containers
+        if: always()
+        run: |
+          docker ps -aq | xargs docker stop | xargs docker rm
