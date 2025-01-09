@@ -1,7 +1,8 @@
-import streamlit as st
 import requests
-from ..headers import show_header
+import streamlit as st
+
 from ..footers import show_footer
+from ..headers import show_header
 
 
 def app():
@@ -39,7 +40,7 @@ def app():
         st.stop()
 
     if st.button("Fetch Metrics"):
-        payload = {"model_name": model_name, "version": version}
+        # payload = {"model_name": model_name, "version": version}
         with st.spinner("Fetching metrics..."):
             try:
                 response_metrics = requests.get(
@@ -61,7 +62,8 @@ def app():
                         st.write(f"**Mean Squared Error (MSE):** {metrics['mse']:.2f}")
                 else:
                     st.error(
-                        f"Failed to fetch metrics: {response_metrics.json().get('detail', 'Unknown error.')}"
+                        f"Failed to fetch metrics"
+                        f": {response_metrics.json().get('detail', 'Unknown error.')}"
                     )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")

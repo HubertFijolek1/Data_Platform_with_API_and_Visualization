@@ -5,16 +5,11 @@ import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ..utils.role_checker import RoleChecker
-from ..ml.metrics_manager import get_metrics
-
-from ..ml.metrics_manager import get_metrics
 from ..database import SessionLocal
+from ..ml.metrics_manager import get_metrics, save_metrics
+from ..ml.model import evaluate_model, save_model, train_model
 from ..models.models import Dataset
 from ..routers.auth import get_current_user
-from ..ml.model import train_model, save_model
-from ..ml.model import evaluate_model
-from ..ml.metrics_manager import save_metrics
 
 router = APIRouter(prefix="/ml", tags=["ml_ops"])
 

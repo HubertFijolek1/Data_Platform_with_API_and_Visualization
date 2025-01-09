@@ -1,8 +1,9 @@
-import streamlit as st
-import requests
 import pandas as pd
-from ..headers import show_header
+import requests
+import streamlit as st
+
 from ..footers import show_footer
+from ..headers import show_header
 
 
 def app():
@@ -50,11 +51,13 @@ def app():
                     st.success("Prediction successful!")
                     st.write(f"**Predicted Label:** {prediction['predictions'][0]}")
                     st.write(
-                        f"**Prediction Probability:** {prediction['probabilities'][0]:.2f}"
+                        f"**Prediction Probability:**"
+                        f" {prediction['probabilities'][0]:.2f}"
                     )
                 else:
                     st.error(
-                        f"Prediction failed: {response.json().get('detail', 'Unknown error.')}"
+                        f"Prediction failed:"
+                        f" {response.json().get('detail', 'Unknown error.')}"
                     )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")
@@ -103,7 +106,8 @@ def app():
                         )
                     else:
                         st.error(
-                            f"Batch prediction failed: {response.json().get('detail', 'Unknown error.')}"
+                            f"Batch prediction failed:"
+                            f" {response.json().get('detail', 'Unknown error.')}"
                         )
         except Exception as e:
             st.error(f"Error processing the uploaded file: {e}")

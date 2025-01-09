@@ -1,9 +1,9 @@
-import os
 import json
 import logging
-from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, field_validator, ValidationError
+import os
 
+from pydantic import AnyHttpUrl, field_validator
+from pydantic_settings import BaseSettings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +34,8 @@ class Settings(BaseSettings):
                 return parsed
             except json.JSONDecodeError:
                 logger.warning(
-                    "Failed to parse CORS origins as JSON. Falling back to comma-separated string."
+                    "Failed to parse CORS origins as JSON. Falling back to "
+                    "comma-separated string."
                 )
                 # Fallback to comma-separated string
                 return [i.strip() for i in v.split(",")]

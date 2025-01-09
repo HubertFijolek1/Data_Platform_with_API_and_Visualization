@@ -1,10 +1,11 @@
-import sys
 import os
-from pathlib import Path
+import sys
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from pathlib import Path
+
 from alembic import context
+from app.database import Base
+from sqlalchemy import engine_from_config, pool
 
 # 1. Add the "backend/" directory to Python path.
 #    This ensures "app/models.py" can be imported as "from app.models import Base"
@@ -14,7 +15,6 @@ backend_dir = current_dir.parents[
 ]  # Move 2 levels up: [alembic/, env.py] => [backend/]
 sys.path.append(str(backend_dir))
 
-from app.database import Base
 
 # 2. The Alembic Config object
 config = context.config

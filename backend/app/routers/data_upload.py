@@ -1,13 +1,13 @@
 import os
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
-from sqlalchemy.orm import Session
-from datetime import datetime
 import shutil
+from datetime import datetime
 
-from .. import schemas, models, crud
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy.orm import Session
+
+from .. import models, schemas
 from ..database import SessionLocal
 from ..utils.role_checker import RoleChecker
-from ..config.settings import settings
 
 router = APIRouter(
     prefix="/data",
@@ -71,9 +71,9 @@ def upload_dataset(
             )
 
         # Here I can add logic to trigger model training asynchronously in the future
-        # For simplicity, I'll just log the action, normally i would use background tasks or message queues
         print(
-            f"Triggering model training for dataset {dataset.name} with label column {label_column}"
+            f"Triggering model training for dataset {dataset.name} "
+            f"with label column {label_column}"
         )
 
     return dataset

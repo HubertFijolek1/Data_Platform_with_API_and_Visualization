@@ -1,9 +1,7 @@
+from io import StringIO
+
 import pytest
 from fastapi.testclient import TestClient
-from backend.app.database import get_db
-from sqlalchemy.orm import Session
-from io import StringIO
-from backend.app import crud, schemas
 
 
 @pytest.fixture(scope="session")
@@ -31,7 +29,10 @@ def auth_token(client: TestClient):
 def test_upload_dataset(client: TestClient, auth_token: str):
     headers = {"Authorization": f"Bearer {auth_token}"}
     data = {"name": "Test Dataset"}
-    file_content = "name,email,address,created_at\nJohn Doe,john@example.com,123 Elm Street,2025-01-01T12:00:00"
+    file_content = (
+        "name,email,address,created_at\nJohn Doe,"
+        "john@example.com,123 Elm Street,2025-01-01T12:00:00"
+    )
     files = {"file": ("test_dataset.csv", StringIO(file_content), "text/csv")}
     response = client.post("/data/upload", data=data, files=files, headers=headers)
     assert response.status_code == 200
@@ -53,7 +54,10 @@ def test_upload_dataset_invalid_file_type(client: TestClient, auth_token: str):
 def test_upload_dataset_unauthorized(client: TestClient):
     # Attempt to upload dataset without authentication
     data = {"name": "Unauthorized Dataset"}
-    file_content = "name,email,address,created_at\nJane Doe,jane@example.com,456 Oak Avenue,2025-01-02T15:30:00"
+    file_content = (
+        "name,email,address,"
+        "created_at\nJane Doe,jane@example.com,456 Oak Avenue,2025-01-02T15:30:00"
+    )
     files = {"file": ("unauthorized_dataset.csv", StringIO(file_content), "text/csv")}
     response = client.post("/data/upload", data=data, files=files)
     assert response.status_code == 401

@@ -1,6 +1,7 @@
-import streamlit as st
-import requests
 import os
+
+import requests
+import streamlit as st
 
 
 def app():
@@ -23,7 +24,8 @@ def app():
             st.write(f"### Email: {user['email']}")
         else:
             st.error(
-                f"Failed to fetch user profile: {response.json().get('detail', 'Unknown error.')}"
+                f"Failed to fetch user profile:"
+                f" {response.json().get('detail', 'Unknown error.')}"
             )
     except requests.exceptions.ConnectionError:
         st.error("Unable to connect to the backend. Please try again later.")
@@ -61,7 +63,8 @@ def app():
                     st.session_state["user_password"] = new_password
             else:
                 st.error(
-                    f"Failed to update profile: {response.json().get('detail', 'Unknown error.')}"
+                    f"Failed to update profile:"
+                    f" {response.json().get('detail', 'Unknown error.')}"
                 )
         except requests.exceptions.ConnectionError:
             st.error("Unable to connect to the backend. Please try again later.")

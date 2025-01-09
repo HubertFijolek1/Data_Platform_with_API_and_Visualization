@@ -1,10 +1,12 @@
-from sqlalchemy.orm import Session
-from .. import crud, schemas
-from ..models import User
-from jose import JWTError, jwt
 from datetime import datetime, timedelta
+
 from fastapi import HTTPException, status
+from jose import jwt
+from sqlalchemy.orm import Session
+
+from .. import crud, schemas
 from ..config.settings import settings
+from ..models import User
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User:

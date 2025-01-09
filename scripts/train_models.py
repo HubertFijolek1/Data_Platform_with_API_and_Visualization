@@ -12,7 +12,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 from backend.app.ml.model import train_model, save_model, evaluate_model
-from backend.app.ml.metrics_manager import save_metrics
+
 
 def main():
     # For demonstration, load some CSV from an external path:
@@ -36,9 +36,11 @@ def main():
     metrics = evaluate_model(model, df, label_column=label_column)
     print(f"Metrics: {metrics}")
     from backend.app.ml.metrics_manager import save_metrics
+
     save_metrics(model_name, version, metrics)
 
     print("Automated training completed successfully.")
+
 
 if __name__ == "__main__":
     main()

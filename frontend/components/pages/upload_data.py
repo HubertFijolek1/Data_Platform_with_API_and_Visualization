@@ -1,9 +1,8 @@
-import streamlit as st
 import requests
-import os
+import streamlit as st
 
-from ..headers import show_header
 from ..footers import show_footer
+from ..headers import show_header
 
 
 def app():
@@ -59,7 +58,8 @@ def app():
                         st.info("Model training has been initiated.")
                 else:
                     st.error(
-                        f"Failed to upload dataset: {response.json().get('detail', 'Unknown error.')}"
+                        f"Failed to upload dataset:"
+                        f" {response.json().get('detail', 'Unknown error.')}"
                     )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")

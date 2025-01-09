@@ -1,9 +1,12 @@
 import os
+
 import pytest
 from fastapi.testclient import TestClient
-from ..main import app
-from ..database import Base, engine, SessionLocal
+
 from backend.app.models.models import User
+
+from ..database import Base, SessionLocal, engine
+from ..main import app
 
 
 @pytest.fixture
@@ -30,7 +33,6 @@ def client():
 
 
 def test_upload_dataset_success(client):
-
     # Let's pretend it's not protected, or we have a token (not shown).
     fake_file_data = "col1,col2\nval1,val2\n"
     response = client.post(

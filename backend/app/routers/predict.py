@@ -1,13 +1,12 @@
-from fastapi import APIRouter, HTTPException
-
 # from pydantic import BaseModel
 import pandas as pd
+from fastapi import APIRouter, HTTPException
 
 from ..ml.model import load_model
+from ..schemas.schemas_ml import PredictionRequest, PredictionResponse
 
 # from typing import List, Union
 
-from ..schemas.schemas_ml import PredictionRequest, PredictionResponse
 
 router = APIRouter(prefix="/predict", tags=["predict"])
 

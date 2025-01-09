@@ -1,9 +1,11 @@
+import os
+
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import pandas as pd
+
 from .preprocessing import preprocess_data
-import os
 
 
 class SimplePyTorchModel(nn.Module):

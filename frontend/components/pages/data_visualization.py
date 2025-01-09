@@ -1,10 +1,9 @@
-import streamlit as st
-import requests
 import pandas as pd
-import os
+import requests
+import streamlit as st
 
-from ..headers import show_header
 from ..footers import show_footer
+from ..headers import show_header
 
 
 def app():
@@ -71,7 +70,8 @@ def app():
                     st.warning("Selected dataset is empty.")
         else:
             st.error(
-                f"Failed to fetch datasets: {response.json().get('detail', 'Unknown error.')}"
+                f"Failed to fetch datasets:"
+                f" {response.json().get('detail', 'Unknown error.')}"
             )
     except requests.exceptions.ConnectionError:
         st.error("Unable to connect to the backend. Please try again later.")

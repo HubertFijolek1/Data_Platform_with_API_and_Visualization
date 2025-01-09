@@ -3,9 +3,13 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import urllib.parse as urlparse
 
+
 def create_test_database():
     # Fetch the test database URL from environment variables
-    TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql://postgres:password@localhost:5432/data_db_test")
+    TEST_DATABASE_URL = os.getenv(
+        "TEST_DATABASE_URL",
+        "postgresql://postgres:password@localhost:5432/data_db_test",
+    )
 
     # Parse the URL to extract connection parameters
     url = urlparse.urlparse(TEST_DATABASE_URL)
@@ -17,7 +21,9 @@ def create_test_database():
 
     try:
         # Connect to the default 'postgres' database to create the test database
-        conn = psycopg2.connect(dbname='postgres', user=user, password=password, host=host, port=port)
+        conn = psycopg2.connect(
+            dbname="postgres", user=user, password=password, host=host, port=port
+        )
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cursor = conn.cursor()
 
@@ -35,6 +41,7 @@ def create_test_database():
     except Exception as e:
         print(f"Error creating test database: {e}")
         exit(1)
+
 
 if __name__ == "__main__":
     create_test_database()

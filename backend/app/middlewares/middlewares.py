@@ -1,5 +1,6 @@
 import traceback
-from fastapi import Request, HTTPException
+
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 
@@ -12,7 +13,7 @@ async def error_handling_middleware(request: Request, call_next):
     except HTTPException as exc:
         # HTTPExceptions are re-raised as is, so they appear as intended
         raise exc
-    except Exception as exc:
+    except Exception:
         # Log the actual traceback somewhere (e.g., logger, external service)
         print("UNEXPECTED ERROR:", traceback.format_exc())
 

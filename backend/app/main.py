@@ -1,23 +1,22 @@
 import logging.config
 import os
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from dotenv import load_dotenv
-
-from slowapi.errors import RateLimitExceeded
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
 
+from .config.settings import settings
 from .routers import (
     auth_router,
-    data_router,
-    predict_router,
-    ml_ops_router,
     data_generator_router,
+    data_router,
     data_upload_router,
+    ml_ops_router,
+    predict_router,
 )
-from .config.settings import settings
 
 load_dotenv()
 

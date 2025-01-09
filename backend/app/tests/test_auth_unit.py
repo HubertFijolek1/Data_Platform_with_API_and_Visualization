@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+from passlib.context import CryptContext
+
 from backend.app.crud.crud import create_user, verify_password
 from backend.app.schemas.schemas import UserCreate
-from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

@@ -1,9 +1,8 @@
-import streamlit as st
 import requests
-import os
+import streamlit as st
 
-from ..headers import show_header
 from ..footers import show_footer
+from ..headers import show_header
 
 
 def app():
@@ -50,7 +49,8 @@ def app():
                     dataset = response.json()
                     st.success(f"Dataset '{dataset['name']}' generated successfully!")
                     st.write(
-                        f"Download CSV: [Click Here]({BACKEND_URL}/uploads/{dataset['file_name']})"
+                        f"Download CSV: [Click Here]({BACKEND_URL}/"
+                        f"uploads/{dataset['file_name']})"
                     )
                 elif response.status_code == 401:
                     st.error("Authentication failed. Please log in again.")
@@ -58,7 +58,8 @@ def app():
                     st.rerun()
                 else:
                     st.error(
-                        f"Failed to generate dataset: {response.json().get('detail', 'Unknown error.')}"
+                        f"Failed to generate dataset:"
+                        f" {response.json().get('detail', 'Unknown error.')}"
                     )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")

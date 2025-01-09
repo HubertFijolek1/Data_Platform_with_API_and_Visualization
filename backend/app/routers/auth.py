@@ -1,19 +1,21 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
+
 from .. import schemas
+from ..config.settings import settings
+from ..crud import (
+    create_user,
+    get_password_hash,
+    get_user_by_email,
+    get_user_by_username,
+)
 from ..database import SessionLocal
 from ..models import User
 from ..services.auth_service import login_user
-from ..crud import (
-    get_user_by_email,
-    get_user_by_username,
-    create_user,
-    get_password_hash,
-)
-from ..config.settings import settings
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-import logging
 
 router = APIRouter(
     prefix="/auth",

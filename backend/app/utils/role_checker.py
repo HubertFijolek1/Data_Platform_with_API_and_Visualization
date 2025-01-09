@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
-from ..routers.auth import get_current_user
+
 from .. import models
+from ..routers.auth import get_current_user
 
 
 class RoleChecker:

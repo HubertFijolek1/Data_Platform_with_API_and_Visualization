@@ -1,17 +1,15 @@
-from tensorflow import keras
-import pandas as pd
-from .preprocessing import preprocess_data
-from .metrics_manager import save_metrics
 import os
 
+import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
+    mean_squared_error,
     precision_score,
     recall_score,
-    mean_squared_error,
 )
+from tensorflow import keras
 
-from sklearn.metrics import mean_squared_error
+from .preprocessing import preprocess_data
 
 
 def train_model(df: pd.DataFrame, label_column: str, epochs: int = 5) -> keras.Model:
@@ -110,7 +108,8 @@ def evaluate_model(model: keras.Model, df: pd.DataFrame, label_column: str):
 
 def save_model(model: keras.Model, model_name: str, version: str = "v1"):
     """
-    Save a trained Keras model to disk in the 'saved_models/{model_name}/{version}' directory.
+    Save a trained Keras model to disk in the
+    'saved_models/{model_name}/{version}' directory.
     """
     base_dir = os.path.join("saved_models", model_name, version)
     os.makedirs(base_dir, exist_ok=True)

@@ -1,16 +1,14 @@
+import logging
 import os
-import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+
 import pandas as pd
 from faker import Faker
-import logging
-from typing import Optional
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
-from .. import schemas, models, crud
+from .. import models, schemas
 from ..database import SessionLocal
 from ..utils.role_checker import RoleChecker
-from ..config.settings import settings
 
 router = APIRouter(
     prefix="/data-generator",
@@ -50,8 +48,8 @@ def generate_dataset(n_rows: int = 1000, db: Session = Depends(get_db)):
 
     # Create a dataset entry first to get its ID
     dataset = models.Dataset(
-        name=f"Generated Dataset",
-        file_name="",  # Temporary, will update after saving
+        # name=f"Generated Dataset",
+        file_name="k",
         uploaded_at=pd.Timestamp.utcnow(),
     )
     db.add(dataset)

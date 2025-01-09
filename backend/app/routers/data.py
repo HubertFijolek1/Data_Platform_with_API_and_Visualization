@@ -1,31 +1,25 @@
 import os
 import uuid
 from typing import List
-import pandas as pd
 
+import pandas as pd
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
-    status,
     File,
-    UploadFile,
     Form,
+    HTTPException,
     Query,
-    Request,
+    UploadFile,
+    status,
 )
 from sqlalchemy.orm import Session
 
-from .. import schemas, models
+from .. import models, schemas
 from ..database import SessionLocal
+from ..ml.model import save_model, train_model
 from ..routers.auth import get_current_user
 from ..utils.role_checker import RoleChecker
-
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from ..utils.rate_limiter import limiter
-
-from ..ml.model import train_model, save_model
 
 router = APIRouter(
     prefix="/data",
@@ -151,7 +145,8 @@ def delete_dataset(
     admin_only: bool = Depends(RoleChecker(["admin"])),
 ):
     """
-    Delete a dataset by its ID. Only users with the 'admin' role can perform this operation.
+    Delete a dataset by its ID. Only users with the
+    'admin' role can perform this operation.
     """
     dataset = db.query(models.Dataset).filter(models.Dataset.id == dataset_id).first()
     if not dataset:
