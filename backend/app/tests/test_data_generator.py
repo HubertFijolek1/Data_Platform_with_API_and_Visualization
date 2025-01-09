@@ -1,13 +1,12 @@
-# backend/tests/test_data_generator.py
 import pytest
-from sqlalchemy.orm import Session
-from fastapi import status
 import os
-from ...app import crud, schemas
+from sqlalchemy.orm import Session
+from fastapi.testclient import TestClient
+from backend.app.database import get_db
+from backend.app import crud, schemas
 
-
-@pytest.fixture
-def auth_token(client: "TestClient"):
+@pytest.fixture(scope="session")
+def auth_token(client: TestClient):
     # Register a test user
     response = client.post(
         "/auth/register",
@@ -27,13 +26,12 @@ def auth_token(client: "TestClient"):
     assert response.status_code == 200
     return response.json()["access_token"]
 
-
-def test_generate_dataset(client: "TestClient", auth_token: str):
+def test_generate_dataset(client: TestClient, auth_token: str):
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = client.post(
         "/data-generator/generate", json={"n_rows": 500}, headers=headers
     )
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == 200
     data = response.json()
     assert "id" in data
     assert "name" in data
@@ -48,14 +46,12 @@ def test_generate_dataset(client: "TestClient", auth_token: str):
     file_path = os.path.join("backend", "uploads", expected_file_name)
     assert os.path.exists(file_path)
 
-
-def test_generate_dataset_unauthorized(client: "TestClient"):
+def test_generate_dataset_unauthorized(client: TestClient):
     # Attempt to generate dataset without authentication
     response = client.post("/data-generator/generate", json={"n_rows": 500})
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == 401
 
-
-def test_generate_dataset_invalid_role(client: "TestClient"):
+def test_generate_dataset_invalid_role(client: TestClient):
     # Register a user with a role that is not allowed to generate data
     response = client.post(
         "/auth/register",
@@ -68,7 +64,7 @@ def test_generate_dataset_invalid_role(client: "TestClient"):
     assert response.status_code == 200
 
     # Manually change the user's role to 'guest' in the database
-    db: Session = next(client.application.dependency_overrides[get_db]())
+    db: Session = next(get_db())  # Ensure get_db is imported
     user = crud.get_user_by_email(db, email="regularuser@example.com")
     user.role = "guest"
     db.add(user)
@@ -87,4 +83,4 @@ def test_generate_dataset_invalid_role(client: "TestClient"):
     response = client.post(
         "/data-generator/generate", json={"n_rows": 500}, headers=headers
     )
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == 403
