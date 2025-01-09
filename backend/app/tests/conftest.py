@@ -20,6 +20,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from alembic.config import Config
 from alembic import command
 
+
 @pytest.fixture(scope="session", autouse=True)
 def load_env():
     """
@@ -28,6 +29,7 @@ def load_env():
     env_path = os.path.join(PROJECT_ROOT, ".env")
     load_dotenv(dotenv_path=env_path)
 
+
 @pytest.fixture(scope="session", autouse=True)
 def create_test_database():
     """
@@ -35,13 +37,13 @@ def create_test_database():
     """
     # Run the database creation script
     script_path = os.path.join(PROJECT_ROOT, "scripts", "create_test_db.py")
-    subprocess.run(
-        [sys.executable, script_path],
-        check=True
-    )
+    subprocess.run([sys.executable, script_path], check=True)
     yield
     # Teardown: Drop the test database after tests
-    TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql://postgres:password@localhost:5432/data_db_test")
+    TEST_DATABASE_URL = os.getenv(
+        "TEST_DATABASE_URL",
+        "postgresql://postgres:password@localhost:5432/data_db_test",
+    )
     url = urlparse.urlparse(TEST_DATABASE_URL)
     dbname = url.path[1:]
     user = url.username
@@ -50,7 +52,9 @@ def create_test_database():
     port = url.port
 
     try:
-        conn = psycopg2.connect(dbname='postgres', user=user, password=password, host=host, port=port)
+        conn = psycopg2.connect(
+            dbname="postgres", user=user, password=password, host=host, port=port
+        )
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cursor = conn.cursor()
         cursor.execute(f"DROP DATABASE IF EXISTS {dbname};")
@@ -60,9 +64,13 @@ def create_test_database():
     except Exception as e:
         print(f"Error dropping test database: {e}")
 
+
 @pytest.fixture(scope="session")
 def db_engine():
-    TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql://postgres:password@localhost:5432/data_db_test")
+    TEST_DATABASE_URL = os.getenv(
+        "TEST_DATABASE_URL",
+        "postgresql://postgres:password@localhost:5432/data_db_test",
+    )
     engine = create_engine(TEST_DATABASE_URL)
 
     # Apply Alembic migrations
@@ -74,12 +82,16 @@ def db_engine():
 
     # Teardown: Drop all tables (handled in create_test_database fixture)
 
+
 @pytest.fixture(scope="session")
 def db_session(db_engine):
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=db_engine
+    )
     session = TestingSessionLocal()
     yield session
     session.close()
+
 
 @pytest.fixture(scope="session")
 def client(db_session):
@@ -94,6 +106,7 @@ def client(db_session):
 
     with TestClient(app) as c:
         yield c
+
 
 @pytest.fixture
 def auth_token(client: TestClient):

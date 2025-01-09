@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from io import StringIO
 from backend.app import crud, schemas
 
+
 @pytest.fixture(scope="session")
 def auth_token(client: TestClient):
     # Register a test user
@@ -26,6 +27,7 @@ def auth_token(client: TestClient):
     assert response.status_code == 200
     return response.json()["access_token"]
 
+
 def test_upload_dataset(client: TestClient, auth_token: str):
     headers = {"Authorization": f"Bearer {auth_token}"}
     data = {"name": "Test Dataset"}
@@ -38,6 +40,7 @@ def test_upload_dataset(client: TestClient, auth_token: str):
     assert dataset["file_name"] == "test_dataset.csv"
     assert "uploaded_at" in dataset
 
+
 def test_upload_dataset_invalid_file_type(client: TestClient, auth_token: str):
     headers = {"Authorization": f"Bearer {auth_token}"}
     data = {"name": "Invalid File Dataset"}
@@ -45,6 +48,7 @@ def test_upload_dataset_invalid_file_type(client: TestClient, auth_token: str):
     files = {"file": ("invalid_file.html", StringIO(file_content), "text/html")}
     response = client.post("/data/upload", data=data, files=files, headers=headers)
     assert response.status_code == 400
+
 
 def test_upload_dataset_unauthorized(client: TestClient):
     # Attempt to upload dataset without authentication

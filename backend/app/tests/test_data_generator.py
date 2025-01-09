@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from backend.app.database import get_db
 from backend.app import crud, schemas
 
+
 @pytest.fixture(scope="session")
 def auth_token(client: TestClient):
     # Register a test user
@@ -26,6 +27,7 @@ def auth_token(client: TestClient):
     assert response.status_code == 200
     return response.json()["access_token"]
 
+
 def test_generate_dataset(client: TestClient, auth_token: str):
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = client.post(
@@ -46,10 +48,12 @@ def test_generate_dataset(client: TestClient, auth_token: str):
     file_path = os.path.join("backend", "uploads", expected_file_name)
     assert os.path.exists(file_path)
 
+
 def test_generate_dataset_unauthorized(client: TestClient):
     # Attempt to generate dataset without authentication
     response = client.post("/data-generator/generate", json={"n_rows": 500})
     assert response.status_code == 401
+
 
 def test_generate_dataset_invalid_role(client: TestClient):
     # Register a user with a role that is not allowed to generate data
