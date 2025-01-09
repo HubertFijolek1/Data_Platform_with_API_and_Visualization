@@ -28,6 +28,7 @@ jobs:
     env:
       VIRTUAL_ENV: venv
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
+      TEST_DATABASE_URL: postgresql://postgres:password@localhost:5432/data_db_test
 
     steps:
       # 1. Checkout the repository
@@ -40,7 +41,37 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 3. Cache pip dependencies to speed up builds
+      # 3. Wait for PostgreSQL to be ready
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 5
+          done
+        env:
+          PGPASSWORD: password
+
+      # 4. Create Test Database
+      - name: Create Test Database
+        run: |
+          psql -h localhost -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
+        env:
+          PGPASSWORD: password
+
+      # 5. Install Alembic
+      - name: Install Alembic
+        run: |
+          pip install alembic
+
+      # 6. Apply Migrations to Test Database
+      - name: Apply Migrations
+        run: |
+          alembic upgrade head
+        env:
+          TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        working-directory: ./backend
+
+      # 7. Cache pip dependencies to speed up builds
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -51,7 +82,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 4. Install dependencies
+      # 8. Install dependencies
       - name: Install Dependencies
         run: |
           python -m venv venv
@@ -59,31 +90,30 @@ jobs:
           for req in $(find . -name "requirements.txt"); do pip install -r $req; done
           pip install flake8 black isort pytest pytest-cov
 
-      # 5. Lint with flake8
+      # 9. Lint with flake8
       - name: Lint with flake8
         run: |
           flake8 backend frontend --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 backend frontend --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
 
-      # 6. Sort imports with isort
+      # 10. Sort imports with isort
       - name: Sort Imports with isort
         run: |
           isort .
 
-      # 7. Format code with black
+      # 11. Format code with black
       - name: Format with black
         run: |
           black --check .
 
-      # 8. Run tests with pytest
+      # 12. Run tests with pytest
       - name: Run Tests
-        env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/data_db
         run: |
-          alembic upgrade head
-          pytest --cov=./ --cov-report=xml -n auto
+          pytest --cov=backend/app --cov-report=xml
+        env:
+          TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
-      # 9. Upload coverage report
+      # 13. Upload coverage report
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v3
