@@ -30,10 +30,9 @@ jobs:
       PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
       DATABASE_URL: postgresql://postgres:password@db:5432/data_db
       TEST_DATABASE_URL: postgresql://postgres:password@db:5432/data_db_test
+      pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
+      LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
       PGPASSWORD: password
-      PYTHONPATH: ./backend
-      #      pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
-      #      LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
 
     steps:
       # 1. Checkout the repository
@@ -50,68 +49,72 @@ jobs:
       - name: List Docker Containers
         run: docker ps -a
 
-      # 4. Test DB host resolution
+      # 4. Create a Docker network
+      - name: Create a Docker network
+        run: docker network create my_network
+
+      # 5. Connect the service container to the network
+      - name: Connect the service container to the network
+        run: docker network connect my_network ${{ job.services.db.id }}
+
+      # 6. Connect the runner to the network
+      - name: Connect the runner to the network
+        run: docker network connect my_network $HOSTNAME
+
+      # 7. Test DB host resolution
       - name: Test DB host resolution
         run: |
           getent hosts db || echo "db not resolvable"
 
-      - name: Debug Python Path
-        run: |
-          echo "PYTHONPATH: $PYTHONPATH"
-          python -c "import sys; print(sys.path)"
-
-      # 5. Ping db (optional)
+      # 8. Ping db (optional)
       - name: Ping db
         run: |
           ping -c 4 db || echo "db not reachable"
 
-      # 6. Display /etc/hosts (optional)
+      # 9. Display /etc/hosts (optional)
       - name: Display /etc/hosts
         run: cat /etc/hosts
 
-#      # 7. Check User Permissions
-#      - name: Check User Permissions
-#        run: |
-#          psql -h db -p 5432 -U postgres -c "\du"
-#        env:
-#          PGPASSWORD: password
-
-      # 8. Get PostgreSQL Logs
+      # 10. Get PostgreSQL Logs
       - name: Get PostgreSQL Logs
         run: |
           docker logs $(docker ps -q --filter "ancestor=postgres:13") || echo "No logs available"
 
-      # 9. Wait for PostgreSQL to be ready
+      # 11. Wait for PostgreSQL to be ready
       - name: Wait for PostgreSQL
         run: |
           for i in {1..20}; do
-            pg_isready -h db -p 5432 -U postgres && break
+            nc -z -v -w 1 db 5432 && echo "PostgreSQL is up!" && break || echo "db:5432 - no response"
+            if [[ $i == 20 ]]; then
+              echo "PostgreSQL did not start within the expected time."
+              exit 1
+            fi
             echo "Waiting for PostgreSQL..."
             sleep 5
           done
 
-      # 10. Check PostgreSQL Status
+      # 12. Check PostgreSQL Status
       - name: Check PostgreSQL Status
         run: |
           psql -h db -p 5432 -U postgres -c "\l"
         env:
           PGPASSWORD: password
 
-      # 11. Create Test Database
+      # 13. Create Test Database
       - name: Create Test Database
         run: |
           psql -h db -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
         env:
           PGPASSWORD: password
 
-      # 12. Verify data_db_test exists
+      # 14. Verify data_db_test exists
       - name: Verify data_db_test exists
         run: |
           psql -h db -p 5432 -U postgres -d data_db_test -c "\dt"
         env:
           PGPASSWORD: password
 
-      # 13. Install Dependencies
+      # 15. Install Dependencies
       - name: Install Dependencies
         run: |
           python -m venv venv
@@ -120,13 +123,13 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov
 
-      # 14. Install and Run Pre-Commit Hooks
+      # 16. Install and Run Pre-Commit Hooks
       - name: Install Pre-Commit Hooks
         run: |
           pre-commit install
           pre-commit run --all-files
 
-      # 15. Apply Migrations to Test Database
+      # 17. Apply Migrations to Test Database
       - name: Apply Migrations
         run: |
           alembic upgrade head
@@ -134,7 +137,7 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         working-directory: ./backend
 
-      # 16. Cache pip dependencies to speed up builds
+      # 18. Cache pip dependencies to speed up builds
       - name: Cache pip
         uses: actions/cache@v3
         with:
@@ -145,14 +148,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 17. Run Tests with pytest
+      # 19. Run Tests with pytest
       - name: Run Tests
         run: |
           pytest --cov=backend/app --cov-report=xml
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
 
-      # 18. Upload coverage report
+      # 20. Upload coverage report
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
