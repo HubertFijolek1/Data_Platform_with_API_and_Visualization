@@ -1,2 +1,14 @@
 [flake8]
 max-line-length = 88
+exclude =
+    .git,
+    __pycache__,
+    venv,
+    .venv,
+    */venv/*,
+    */.venv/*,
+    backend/uploads,
+    backend/saved_models,
+    backend/app/tests/__pycache__,
+    backend/app/tests/*.pyc,
+    .pytest_cache,

@@ -62,8 +62,8 @@ jobs:
       # 5. Lint with flake8
       - name: Lint with flake8
         run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+          flake8 backend frontend --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 backend frontend --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
 
       # 6. Sort imports with isort
       - name: Sort Imports with isort
