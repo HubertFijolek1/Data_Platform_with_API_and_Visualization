@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: Data Analysis Platform CI
 
 on:
   push:
@@ -10,151 +10,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      db:
-        image: postgres:13
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: data_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --network my_network
-
-    env:
-      VIRTUAL_ENV: venv
-      PATH: venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH
-      DATABASE_URL: postgresql://postgres:password@db:5432/data_db
-      TEST_DATABASE_URL: postgresql://postgres:password@db:5432/data_db_test
-      pythonLocation: /opt/hostedtoolcache/Python/3.10.16/x64
-      LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.16/x64/lib
-      PGPASSWORD: password
-
     steps:
-      # 1. Checkout the repository
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      # 2. Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      # 3. Create a Docker network with a subnet
-      - name: Create a Docker network
-        run: docker network create --subnet=172.19.0.0/16 my_network
+    - name: Install dependencies (backend)
+      working-directory: ./backend
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
 
-      # 4. List Docker containers BEFORE starting services (for debugging)
-      - name: List Docker Containers (Before)
-        run: docker ps -a
+    - name: Install dependencies (frontend)
+      working-directory: ./frontend
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
 
-      # 5. Get PostgreSQL Logs (BEFORE starting services)
-      - name: Get PostgreSQL Logs (Before)
-        run: |
-          docker logs $(docker ps -aq --filter "ancestor=postgres:13") || echo "No logs available (before service start)"
+    - name: Build the Docker image
+      run: docker-compose build
 
-      # --- Service container 'db' will start here ---
+    - name: Run tests (backend)
+      run: docker-compose run backend pytest
 
-      # 6. List Docker containers AFTER starting services
-      - name: List Docker Containers (After)
-        run: docker ps -a
+    - name: Lint with flake8 (backend)
+      run: docker-compose run backend flake8 .
 
-      # 7. Get PostgreSQL Logs (AFTER service start)
-      - name: Get PostgreSQL Logs (After)
-        run: |
-          docker logs $(docker ps -q --filter "ancestor=postgres:13") || echo "No logs available (after service start)"
+    - name: Run Streamlit app (frontend)
+      run: docker-compose up -d frontend
 
-      # 8. Wait for PostgreSQL to be ready
-      - name: Wait for PostgreSQL
-        run: |
-          for i in {1..20}; do
-            nc -z -v -w 1 db 5432 && echo "PostgreSQL is up!" && break || echo "db:5432 - no response"
-            if [[ $i == 20 ]]; then
-              echo "PostgreSQL did not start within the expected time."
-              exit 1
-            fi
-            echo "Waiting for PostgreSQL..."
-            sleep 5
-          done
-
-      # 9. Check PostgreSQL Status
-      - name: Check PostgreSQL Status
-        run: |
-          psql -h db -p 5432 -U postgres -c "\l"
-        env:
-          PGPASSWORD: password
-
-      # 10. Create Test Database
-      - name: Create Test Database
-        run: |
-          psql -h db -p 5432 -U postgres -c "CREATE DATABASE data_db_test;"
-        env:
-          PGPASSWORD: password
-
-      # 11. Verify data_db_test exists
-      - name: Verify data_db_test exists
-        run: |
-          psql -h db -p 5432 -U postgres -d data_db_test -c "\dt"
-        env:
-          PGPASSWORD: password
-
-      # 12. Install Dependencies
-      - name: Install Dependencies
-        run: |
-          python -m venv venv
-          pip install --upgrade pip
-          pip install pre-commit
-          pip install -r backend/requirements.txt
-          pip install pytest pytest-cov
-
-      # 13. Install and Run Pre-Commit Hooks
-      - name: Install Pre-Commit Hooks
-        run: |
-          pre-commit install
-          pre-commit run --all-files
-
-      # 14. Apply Migrations to Test Database
-      - name: Apply Migrations
-        run: |
-          alembic upgrade head
-        env:
-          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-        working-directory: ./backend
-
-      # 15. Cache pip
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: |
-            venv/lib/python3.10/site-packages
-            ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      # 16. Run Tests with pytest
-      - name: Run Tests
-        run: |
-          pytest --cov=backend/app --cov-report=xml
-        env:
-          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-
-      # 17. Upload coverage report
-      - name: Upload Coverage Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.xml
-
-      # 18. Cleanup: Stop and remove containers
-      - name: Stop and Remove Containers
-        if: always()
-        run: |
-          docker ps -aq | xargs docker stop | xargs docker rm
+    - name: Check Streamlit app availability
+      run: |
+        apt-get update -y
+        apt-get install -y wait-for-it
+        wait-for-it http://localhost:8501 -t 60 -- echo "Streamlit app is available"
