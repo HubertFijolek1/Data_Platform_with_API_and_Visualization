@@ -5,7 +5,7 @@ WORKDIR /app
 ENV PYTHONPATH=/app
 
 # Install build dependencies (Alpine uses apk)
-RUN apk add --update --no-cache gcc g++ musl-dev linux-headers
+RUN apk add --update --no-cache gcc g++ musl-dev linux-headers scikit-learn-dev
 
 # Copy and install Python dependencies
 COPY requirements.txt .
@@ -17,8 +17,8 @@ FROM python:3.10-alpine AS final
 
 WORKDIR /app
 
-# Install runtime dependencies
-# RUN apk add --update --no-cache netcat-openbsd
+# Install runtime dependencies (if needed)
+RUN apk add --update --no-cache scikit-learn
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
