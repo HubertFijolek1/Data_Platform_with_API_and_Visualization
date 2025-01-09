@@ -45,21 +45,21 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 3. List Docker containers (debugging)
-      - name: List Docker Containers
-        run: docker ps -a
-
-      # 4. Create a Docker network
+      # 3. Create a Docker network
       - name: Create a Docker network
         run: docker network create my_network
 
-      # 5. Connect the service container to the network
+      # 4. Connect the service container to the network
       - name: Connect the service container to the network
         run: docker network connect my_network ${{ job.services.db.id }}
 
-      # 6. Connect the runner to the network
+      # 5. Connect the runner to the network
       - name: Connect the runner to the network
         run: docker network connect my_network $HOSTNAME
+
+      # 6. List Docker containers (debugging)
+      - name: List Docker Containers
+        run: docker ps -a
 
       # 7. Test DB host resolution
       - name: Test DB host resolution
