@@ -1,8 +1,9 @@
 import logging.config
 import os
 
+import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -15,7 +16,6 @@ from .routers import (
     data_router,
     data_upload_router,
     ml_ops_router,
-    predict_router,
 )
 
 load_dotenv()
@@ -38,6 +38,12 @@ This API allows you to manage and analyze datasets.
     version="1.0.0",
 )
 
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Data Analysis Platform API"}
+
+
 # CORS configuration using centralized settings
 app.add_middleware(
     CORSMiddleware,
@@ -49,7 +55,6 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(data_router)
-app.include_router(predict_router)
 app.include_router(ml_ops_router)
 app.include_router(data_generator_router)
 app.include_router(data_upload_router)
@@ -58,6 +63,18 @@ uploads_dir = os.path.join(os.getcwd(), "uploads")
 os.makedirs(uploads_dir, exist_ok=True)  # Creates the directory if it doesn't exist
 
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+
+async def get_ml_prediction(data):
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://backend-ml:8000/predict/", json=data)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            # Handle error, possibly raise an HTTPException
+            raise HTTPException(
+                status_code=response.status_code, detail="ML prediction failed"
+            )
 
 
 @app.get("/test-logging")
