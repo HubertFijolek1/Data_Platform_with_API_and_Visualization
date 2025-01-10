@@ -25,7 +25,7 @@ COPY . /app
 EXPOSE 8501
 
 # Set environment variable for backend URL with a sensible default
-ENV BACKEND_URL=http://backend:8000
+ENV BACKEND_URL=http://backend-api:8000
 
 # Run Streamlit
 CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
