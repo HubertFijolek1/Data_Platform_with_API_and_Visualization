@@ -7,19 +7,19 @@ import psycopg2
 import pytest
 from alembic import command
 from alembic.config import Config
+from app.database import get_db
+from app.main import app
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.app.database import get_db
-from backend.app.main import app
-
 # Add the project root to sys.path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../.."))
 sys.path.insert(0, PROJECT_ROOT)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 
 @pytest.fixture(scope="session", autouse=True)
