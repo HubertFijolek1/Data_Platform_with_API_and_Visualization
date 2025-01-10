@@ -2,8 +2,8 @@
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 
-from ..ml.model import load_model
-from ..schemas.schemas_ml import PredictionRequest, PredictionResponse
+from backend.api.app.schemas.schemas_ml import PredictionRequest, PredictionResponse
+from backend.ml.app.ml.model import load_model
 
 # from typing import List, Union
 
