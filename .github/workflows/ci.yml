@@ -49,24 +49,17 @@ jobs:
         ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
         BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}
         EOF
-    - name: Build and run Docker containers
-      run: |
-        docker-compose up -d --build
 
-    - name: Wait for services to be healthy
+    - name: Build Docker containers
       run: |
-        docker-compose ps -q | wc -l | xargs -I {} test {} -eq 3  # Check if 3 services are running
-        echo "Waiting for services to become healthy..."
-        while ! docker-compose ps --all | grep healthy | grep -c 'health: ok' | grep 3; do
-          sleep 5;
-        done;
-        echo "All services are healthy!"
+        docker-compose build
 
-    - name: Run tests (backend)
-      run: docker-compose exec backend pytest
+    - name: Run Tests (backend-api)
+      run: |
+        docker-compose run backend-api-test
 
     - name: Lint with flake8 (backend)
-      run: docker-compose exec backend flake8 .
+      run: docker-compose exec backend-api flake8 .
 
     - name: Check Streamlit app availability
       run: |
@@ -87,3 +80,4 @@ jobs:
           exit 1
         else
           echo "Streamlit app is available!"
+        fi
