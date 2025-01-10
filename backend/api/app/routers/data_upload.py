@@ -23,6 +23,9 @@ def get_db():
         db.close()
 
 
+UPLOADS_DIR = "./uploads"
+
+
 @router.post(
     "/upload",
     response_model=schemas.DatasetRead,
@@ -77,3 +80,13 @@ def upload_dataset(
         )
 
     return dataset
+
+
+def save_file(file: UploadFile, unique_id: str) -> str:
+    """Save an uploaded file and return its stored path."""
+    file_extension = os.path.splitext(file.filename)[1]
+    file_name = f"{unique_id}{file_extension}"
+    file_location = os.path.join(UPLOADS_DIR, file_name)
+    with open(file_location, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return file_name
