@@ -1,11 +1,10 @@
 import os
 
 import pytest
+from app import crud
+from app.database import get_db
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-
-from backend.app import crud
-from backend.app.database import get_db
 
 
 @pytest.fixture(scope="session")
