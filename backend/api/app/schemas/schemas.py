@@ -1,13 +1,19 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+
+
+class DatasetCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1)
+    file_name: str
+    uploaded_at: datetime
 
 
 class UserRead(BaseModel):
