@@ -1,20 +1,60 @@
 services:
-  backend:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./frontend/.env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend-api
+
+  backend-api:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: api/Dockerfile
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend/uploads:/app/uploads
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+      - backend-ml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  backend-api-test:
+    build:
+      context: ./backend
+      dockerfile: api/Dockerfile
     env_file:
       - ./backend/.env
     volumes:
-      - saved_models_data:/app/saved_models
-      - ./backend/uploads:/app/uploads  # Mount uploads directory for access
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - db
+      - backend-ml
+      - backend-api
+    command: ["pytest", "/app/tests"]
+
+  backend-ml:
+    build:
+      context: ./backend/ml
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -25,31 +65,15 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: data_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "8501:8501"
-    environment:
-      - BACKEND_URL=http://backend:8000
-    volumes:
-      - ./frontend:/app
-      - ./frontend/.streamlit/secrets.toml:/app/.streamlit/secrets.toml  # Mount secrets
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8501/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
 volumes:
-  postgres_data:
-  saved_models_data:
+  db-data:
