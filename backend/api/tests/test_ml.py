@@ -1,10 +1,9 @@
 import pandas as pd
 import pytest
 import torch
-
-from ..ml.model import evaluate_model, train_model
-from ..ml.pytorch_model import train_pytorch_classifier
-from ..ml.sentiment import SentimentAnalyzer
+from app.ml.model import evaluate_model, train_model
+from app.ml.pytorch_model import train_pytorch_classifier
+from app.ml.sentiment import SentimentAnalyzer
 
 
 @pytest.fixture

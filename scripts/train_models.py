@@ -11,7 +11,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
-from backend.app.ml.model import train_model, save_model, evaluate_model
+from backend.api.app import train_model, save_model, evaluate_model
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
     # Evaluate and store metrics
     metrics = evaluate_model(model, df, label_column=label_column)
     print(f"Metrics: {metrics}")
-    from backend.app.ml.metrics_manager import save_metrics
+    from backend.ml.app.ml import save_metrics
 
     save_metrics(model_name, version, metrics)
 
