@@ -1,17 +1,28 @@
 import os
 from typing import List
 
+import httpx
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
-from ..ml.metrics_manager import get_metrics, save_metrics
-from ..ml.model import evaluate_model, save_model, train_model
+
+# from ml.metrics_manager import get_metrics, save_metrics
 from ..models.models import Dataset
 from ..routers.auth import get_current_user
 
 router = APIRouter(prefix="/ml", tags=["ml_ops"])
+
+metrics_store = {}  # dict with keys: (model_name, version), value: dict of metrics
+
+
+def save_metrics(model_name: str, version: str, metrics: dict):
+    metrics_store[(model_name, version)] = metrics
+
+
+def get_metrics(model_name: str, version: str):
+    return metrics_store.get((model_name, version), None)
 
 
 def get_db():
@@ -23,7 +34,7 @@ def get_db():
 
 
 @router.post("/retrain")
-def retrain_model(
+async def retrain_model(
     dataset_id: int,
     label_column: str,
     model_name: str,
@@ -31,9 +42,7 @@ def retrain_model(
     current_user=Depends(get_current_user),
 ):
     """
-    Retrain a model with a given dataset (by dataset_id).
-    - label_column indicates the target column in the CSV
-    - model_name is what the saved model will be called
+    Triggers the retraining of a model using the backend-ml service.
     """
     dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
@@ -48,21 +57,23 @@ def retrain_model(
             detail=f"File for dataset_id {dataset_id} not found on disk.",
         )
 
-    # Load data
-    df = pd.read_csv(file_path)
-    if label_column not in df.columns:
+    train_endpoint = "http://backend-ml:8000/train/"
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                train_endpoint,
+                json={
+                    "dataset_path": os.path.abspath(file_path),
+                    "label_column": label_column,
+                    "model_name": model_name,
+                },
+            )
+            response.raise_for_status()  # Raise an exception for bad status codes
+            return response.json()
+    except httpx.HTTPError as e:
         raise HTTPException(
-            status_code=400,
-            detail=f"label_column '{label_column}' not found in dataset.",
+            status_code=500, detail=f"Failed to trigger model training: {e}"
         )
-
-    model = train_model(df, label_column=label_column, epochs=5)
-    path = save_model(model, model_name)
-    # Evaluate classification
-    metrics = evaluate_model(model, df, label_column=label_column)
-    # Example storing model metrics with version = "v1"
-    save_metrics(model_name, "v1", metrics)
-    return {"message": "Model retrained successfully", "model_saved_path": path}
 
 
 @router.get("/performance")
@@ -96,19 +107,27 @@ def list_models(db: Session = Depends(get_db), current_user=Depends(get_current_
 
 
 @router.get("/metrics/{model_name}/{version}", response_model=dict, tags=["ml_ops"])
-def get_model_metrics(
+async def get_model_metrics(
     model_name: str,
     version: str = "v1",
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """
-    Retrieve performance metrics for a specified model and version.
+    Retrieve performance metrics for a specified model and version from the backend-ml service.
     """
-    metrics = get_metrics(model_name, version)
-    if metrics is None:
+    metrics_endpoint = f"http://backend-ml:8000/metrics/{model_name}/{version}"
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(metrics_endpoint)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=response.json().get("detail", "Failed to retrieve metrics"),
+                )
+    except httpx.HTTPError as e:
         raise HTTPException(
-            status_code=404,
-            detail="Metrics not found for the specified model and version.",
+            status_code=500, detail=f"Failed to get metrics from backend-ml: {e}"
         )
-    return metrics
