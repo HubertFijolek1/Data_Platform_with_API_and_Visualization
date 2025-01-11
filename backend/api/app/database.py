@@ -6,6 +6,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 # Use the environment variable for the database URL
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# print(f"DATABASE_URL is set as: {DATABASE_URL}")
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL, echo=False)
 

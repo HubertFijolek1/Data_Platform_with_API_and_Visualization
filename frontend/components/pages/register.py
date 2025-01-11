@@ -48,7 +48,9 @@ def app():
                 st.info("Redirecting to the login page...")
                 # Add a small delay before redirecting
                 time.sleep(2)
-                st.rerun()  # Refresh the app
+                # Programmatically set the selected page to "Login"
+                st.session_state["selected_page"] = "Login"
+                st.rerun()  # Refresh the app to trigger the navbar update
             else:
                 # Extract error message from response
                 try:
