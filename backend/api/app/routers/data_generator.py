@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from typing import Callable, Dict, List
 
 import pandas as pd
@@ -112,16 +113,29 @@ def get_db():
         db.close()
 
 
+# Utility function to sanitize filenames
+def sanitize_filename(name: str) -> str:
+    return re.sub(r"[^\w\-\.]", "_", name)
+
+
 class GenerateDatasetRequest(BaseModel):
     """
     Pydantic model for handling dataset generation requests.
     """
 
-    n_rows: int = Field(..., gt=0, le=10000, description="Number of rows (max: 10,000)")
+    n_rows: int = Field(
+        ..., ge=100, le=100000, description="Number of rows (min: 100, max: 100,000)"
+    )
     columns: List[str] = Field(
         ..., description="List of columns to include in the dataset"
     )
     dataset_name: str = Field(..., description="Name of the dataset")
+    filename: str | None = Field(
+        default=None, description="Optional custom file name (e.g., 'MyData.csv')"
+    )
+    overwrite: bool = Field(
+        default=False, description="If True and filename already exists, overwrite it"
+    )
 
 
 # Mapping of column names to their respective generator functions
@@ -216,61 +230,83 @@ COLUMN_GENERATORS: Dict[str, Callable[[int], List]] = {
     dependencies=[Depends(RoleChecker(["admin", "user"]))],
 )
 def generate_dataset(request: GenerateDatasetRequest, db: Session = Depends(get_db)):
-    """
-    Generate a synthetic dataset based on selected columns and number of rows.
-    """
     n_rows = request.n_rows
     selected_columns = request.columns
-    dataset_name = request.dataset_name
+    dataset_name = request.dataset_name.strip()
 
-    logger.debug(
-        f"Generating synthetic dataset '{dataset_name}' with {n_rows} rows for columns: {selected_columns}"
-    )
+    filename_input = (
+        request.filename.strip() if request.filename else None
+    )  # may be None or user-supplied
+    overwrite = request.overwrite
 
-    # Generate the data
+    # Step 1: Generate the data in memory
     data = {}
     for column in selected_columns:
         generator_func = COLUMN_GENERATORS.get(column)
         if not generator_func:
-            logger.warning(
-                f"No generator found for column '{column}'. Using generic generator."
-            )
             data[column] = generate_generic(column, n_rows)
-            continue
-        try:
-            data[column] = generator_func(n_rows)
-        except Exception as e:
-            logger.error(f"Error generating data for column '{column}': {e}")
-            raise HTTPException(
-                status_code=400, detail=f"Error generating data for column '{column}'."
-            )
-
+        else:
+            try:
+                data[column] = generator_func(n_rows)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Error generating data for column '{column}': {str(e)}",
+                )
     df = pd.DataFrame(data)
 
-    # Create a dataset entry
+    # Step 2: Determine the final file name
+    if filename_input:
+        # Ensure the filename has a .csv extension
+        if not filename_input.lower().endswith(".csv"):
+            filename_input += ".csv"
+        final_file_name = sanitize_filename(filename_input)
+    else:
+        # Default to dataset_name with .csv extension
+        sanitized_name = sanitize_filename(dataset_name)
+        final_file_name = f"{sanitized_name}.csv"
+
+    if not final_file_name:
+        final_file_name = f"{sanitize_filename(dataset_name)}.csv"
+
+    # Step 3: Check for file existence
+    uploads_dir = os.path.join(os.getcwd(), "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    file_path = os.path.join(uploads_dir, final_file_name)
+
+    if os.path.exists(file_path):
+        if not overwrite:
+            raise HTTPException(
+                status_code=409,
+                detail=f"File '{final_file_name}' already exists. "
+                f"Please use overwrite=true or provide a different filename.",
+            )
+        else:
+            # Overwrite: remove old file
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to overwrite existing file '{final_file_name}': {str(e)}",
+                )
+
+    # Step 4: Save the CSV to disk
+    try:
+        df.to_csv(file_path, index=False)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to save dataset to disk: {str(e)}"
+        )
+
+    # Step 5: Create a dataset entry in the database
     dataset = models.Dataset(
         name=dataset_name,
-        file_name="",  # Placeholder
+        file_name=final_file_name,
         uploaded_at=pd.Timestamp.utcnow(),
     )
     db.add(dataset)
     db.commit()
     db.refresh(dataset)
-
-    # Create and save the CSV file
-    file_name = f"generated_{dataset.id}.csv"
-    uploads_dir = os.path.join(os.getcwd(), "uploads")
-    os.makedirs(uploads_dir, exist_ok=True)
-    file_path = os.path.join(uploads_dir, file_name)
-    df.to_csv(file_path, index=False)
-
-    # Update the dataset metadata
-    dataset.file_name = file_name
-    db.commit()
-    db.refresh(dataset)
-
-    logger.info(
-        f"Synthetic dataset '{dataset_name}' generated and saved as {file_name}."
-    )
 
     return dataset
