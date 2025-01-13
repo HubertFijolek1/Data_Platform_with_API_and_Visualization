@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -51,3 +51,23 @@ class DatasetRead(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class GenerateDatasetRequest(BaseModel):
+    """
+    Pydantic model for handling dataset generation requests.
+    """
+
+    n_rows: int = Field(
+        ..., ge=100, le=100000, description="Number of rows (min: 100, max: 100,000)"
+    )
+    columns: List[str] = Field(
+        ..., description="List of columns to include in the dataset"
+    )
+    dataset_name: str = Field(..., description="Name of the dataset")
+    filename: Optional[str] = Field(
+        default=None, description="Optional custom file name (e.g., 'MyData.csv')"
+    )
+    overwrite: bool = Field(
+        default=False, description="If True and filename already exists, overwrite it"
+    )

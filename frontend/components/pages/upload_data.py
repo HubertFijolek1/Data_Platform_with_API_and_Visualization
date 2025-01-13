@@ -9,7 +9,7 @@ def app():
     show_header("Upload Data", "Add your datasets to the platform")
 
     if "auth_token" not in st.session_state:
-        st.warning("You need to login before uploading data.")
+        st.warning("You need to log in before uploading data.")
         show_footer()
         return
 
@@ -19,26 +19,23 @@ def app():
         col1, col2 = st.columns([1, 2])
 
         with col1:
-            name = st.text_input("Dataset Name")
-            train = st.checkbox("Train Model After Upload")
+            name = st.text_input("Dataset Name (optional)")
 
         with col2:
-            file = st.file_uploader("Upload CSV or TXT", type=["csv", "txt"])
-            label_column = st.text_input("Label Column (if training)")
+            file = st.file_uploader("Upload CSV", type=["csv"])
 
         submit = st.form_submit_button("Upload")
 
     if submit:
-        if not name or not file:
-            st.error("Please provide a dataset name and upload a file.")
+        if not file:
+            st.error("Please upload a CSV file.")
             return
 
+        # If dataset name is empty, it will be handled by the backend to use the original file name
+        data = {}
         files = {"file": (file.name, file.getvalue(), file.type)}
-        data = {
-            "name": name,
-            "train": train,
-            "label_column": label_column if train else None,
-        }
+        if name:
+            data["name"] = name
 
         headers = {"Authorization": f"Bearer {st.session_state.get('auth_token', '')}"}
 
@@ -54,12 +51,9 @@ def app():
                     dataset = response.json()
                     st.success(f"Dataset '{dataset['name']}' uploaded successfully!")
                     st.write(f"File Name: {dataset['file_name']}")
-                    if train:
-                        st.info("Model training has been initiated.")
                 else:
                     st.error(
-                        f"Failed to upload dataset:"
-                        f" {response.json().get('detail', 'Unknown error.')}"
+                        f"Failed to upload dataset: {response.json().get('detail', 'Unknown error.')}"
                     )
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")
