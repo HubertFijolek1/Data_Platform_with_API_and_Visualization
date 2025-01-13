@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /
 # Copy and install Python dependencies
 COPY api/requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 -r requirements.txt
 
 # Copy the ml directory and install it
 COPY ml /app/ml
