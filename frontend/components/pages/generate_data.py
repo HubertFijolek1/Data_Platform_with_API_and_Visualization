@@ -1,3 +1,4 @@
+import pandas as pd
 import requests
 import streamlit as st
 
@@ -15,11 +16,53 @@ def app():
     # Ensure the user is authenticated
     if "auth_token" not in st.session_state:
         st.warning("You need to log in to generate datasets.")
+        show_footer()
         return
 
-    # Define dataset types with relevant columns
+    headers = {"Authorization": f"Bearer {st.session_state['auth_token']}"}
+
+    st.markdown("### Existing Files")
+
+    try:
+        # Grabbing a large page_size up to 100 as per backend limit
+        response = requests.get(
+            f"{BACKEND_URL}/data/?page=1&page_size=100", headers=headers
+        )
+        if response.status_code == 200:
+            existing_datasets = (
+                response.json()
+            )  # list of dicts: {id, name, file_name, uploaded_at, ...}
+            if existing_datasets:
+                for ds in existing_datasets:
+                    file_name = ds["file_name"]
+                    dataset_name = ds["name"]
+                    file_url = f"{BACKEND_URL}/uploads/{file_name}"
+
+                    # Attempt to read CSV to get shape
+                    try:
+                        df = pd.read_csv(file_url)
+                        rows, cols = df.shape
+                        st.write(
+                            f"**{dataset_name}**  \n"
+                            f"File: `{file_name}`  \n"
+                            f"Rows: **{rows}**, Columns: **{cols}**"
+                        )
+                    except Exception as e:
+                        st.warning(f"Could not read '{file_name}': {e}")
+            else:
+                st.info("No datasets found.")
+        else:
+            st.error(
+                f"Failed to fetch existing datasets: "
+                f"{response.json().get('detail', 'Unknown error.')}"
+            )
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching existing datasets: {e}")
+
+    st.markdown("---")
+
     dataset_types = {
-        "User Profiles": [
+        "User_Profiles": [
             "user_id",
             "name",
             "email",
@@ -31,7 +74,7 @@ def app():
             "status",
             "last_login",
         ],
-        "E-Commerce Transactions": [
+        "E-Commerce_Transactions": [
             "transaction_id",
             "user_id",
             "product_id",
@@ -43,7 +86,7 @@ def app():
             "payment_method",
             "delivery_status",
         ],
-        "Healthcare Patients": [
+        "Healthcare_Patients": [
             "patient_id",
             "name",
             "age",
@@ -55,7 +98,7 @@ def app():
             "doctor_id",
             "insurance_status",
         ],
-        "Banking Operations": [
+        "Banking_Operations": [
             "account_number",
             "customer_name",
             "balance",
@@ -67,7 +110,7 @@ def app():
             "timestamp",
             "is_fraud",
         ],
-        "Education Performance": [
+        "Education_Performance": [
             "student_id",
             "name",
             "age",
@@ -79,7 +122,7 @@ def app():
             "exam_score",
             "extra_curricular",
         ],
-        "Product Reviews": [
+        "Product_Reviews": [
             "review_id",
             "product_id",
             "user_id",
@@ -91,7 +134,7 @@ def app():
             "category",
             "brand",
         ],
-        "IoT Sensor Data": [
+        "IoT_Sensor_Data": [
             "sensor_id",
             "device_name",
             "timestamp",
@@ -103,7 +146,7 @@ def app():
             "battery_level",
             "status",
         ],
-        "Customer Support Tickets": [
+        "Customer_Support_Tickets": [
             "ticket_id",
             "user_id",
             "issue_type",
@@ -115,7 +158,7 @@ def app():
             "channel",
             "satisfaction_rating",
         ],
-        "Financial Market Data": [
+        "Financial_Market_Data": [
             "ticker",
             "company_name",
             "price_open",
@@ -127,7 +170,7 @@ def app():
             "pe_ratio",
             "dividend_yield",
         ],
-        "Social Media Metrics": [
+        "Social_Media_Metrics": [
             "post_id",
             "user_id",
             "timestamp",
@@ -159,30 +202,49 @@ def app():
         col1, col2 = st.columns([1, 2])
 
         with col1:
+            # Restrict the user to values between 100 and 100,000
             n_rows = st.number_input(
-                "Number of Rows", min_value=100, max_value=10000, step=100, value=1000
+                "Number of Rows", min_value=100, max_value=100000, step=100, value=1000
             )
-            dataset_name = st.text_input(
-                "Dataset Name", value=f"{dataset_type} Dataset"
+
+            # By default, combine the selected dataset_type + "_Dataset"
+            default_dataset_name = f"{dataset_type}_Dataset"
+            dataset_name = st.text_input("Dataset Name", value=default_dataset_name)
+
+            filename = st.text_input(
+                "File Name (Optional - if left blank, the dataset name will be used as the file name.)",
+                value="",
+                help="If left blank, the dataset name will be used as the file name.",
+            )
+            overwrite = st.checkbox(
+                "Overwrite if file already exists?",
+                value=False,
+                help="If checked, existing files with the same name will be overwritten.",
             )
 
         with col2:
-            st.write("")  # Empty for alignment
+            st.write("")  # for spacing, or any extra fields as needed
 
         submit = st.form_submit_button("Generate Dataset")
 
-    # Handle form submission
+    # When user clicks 'Generate Dataset'
     if submit:
-        if not dataset_name:
-            st.error("Please provide a dataset name.")
-            return
-
         if not selected_columns:
             st.error("Please select at least one column.")
-            return
+            st.stop()
 
-        headers = {"Authorization": f"Bearer {st.session_state['auth_token']}"}
-        payload = {"n_rows": int(n_rows), "columns": selected_columns}
+        # Double-check in front-end as well
+        if not (100 <= n_rows <= 100000):
+            st.error("Number of rows must be between 100 and 100000.")
+            st.stop()
+
+        payload = {
+            "n_rows": int(n_rows),
+            "columns": selected_columns,
+            "dataset_name": dataset_name.strip(),
+            "filename": filename.strip() if filename else None,
+            "overwrite": overwrite,
+        }
 
         with st.spinner("Generating dataset..."):
             try:
@@ -194,13 +256,19 @@ def app():
                 if response.status_code == 200:
                     dataset = response.json()
                     st.success(f"Dataset '{dataset['name']}' generated successfully!")
-                    st.write(
-                        f"Download CSV: [Click Here]({BACKEND_URL}/uploads/{dataset['file_name']})"
-                    )
+                    # Optionally, provide a download button if the backend returns the file content
+                    # Here, assuming the backend does not return the file content, just metadata
+                    # To download, the user can use the Existing Files section
+                    st.rerun()
+
                 elif response.status_code == 401:
                     st.error("Authentication failed. Please log in again.")
                     st.session_state.pop("auth_token", None)
                     st.rerun()
+
+                elif response.status_code == 409:
+                    st.error(response.json().get("detail", "File already exists."))
+
                 else:
                     st.error(
                         f"Failed to generate dataset: "

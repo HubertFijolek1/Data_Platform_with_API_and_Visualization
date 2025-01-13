@@ -18,5 +18,5 @@ class Dataset(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    file_name = Column(String, nullable=False)
+    file_name = Column(String, unique=True, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
