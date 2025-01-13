@@ -4,29 +4,33 @@ from logging.config import fileConfig
 from pathlib import Path
 
 from alembic import context
-from app.database import Base
 from sqlalchemy import engine_from_config, pool
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+# Add the 'api' directory to sys.path to allow imports from 'app'
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "api"))
+)
 
-config = context.config
-config.set_main_option("script_location", "alembic_migrations")
+from app.database import Base
+from app.models.models import Dataset, User
 
-# 3. Configure logging
-fileConfig(config.config_file_name)
+# Configure logging
+fileConfig(context.config.config_file_name)
 
-# 4. Metadata for 'autogenerate'
+# Set target_metadata for autogenerate
 target_metadata = Base.metadata
 
-# 5. Get the DB URL from environment variable "DATABASE_URL"
+# Get the database URL from the environment variable
 database_url = os.getenv("DATABASE_URL")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+    context.config.set_main_option("sqlalchemy.url", database_url)
+else:
+    raise ValueError("DATABASE_URL environment variable not set")
 
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
-    url = config.get_main_option("sqlalchemy.url")
+    url = context.config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -41,7 +45,7 @@ def run_migrations_offline():
 def run_migrations_online():
     """Run migrations in 'online' mode."""
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        context.config.get_section(context.config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
