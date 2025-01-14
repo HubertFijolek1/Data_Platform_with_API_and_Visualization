@@ -1,57 +1,59 @@
-# from pydantic import BaseModel
+import os
+
+import joblib
+import numpy as np
 import pandas as pd
+import tensorflow as tf
+from app.schemas_ml import PredictionRequest, PredictionResponse
 from fastapi import APIRouter, HTTPException
+from tensorflow import keras
 
-from backend.api.app.schemas.schemas_ml import PredictionRequest, PredictionResponse
-from backend.ml.app.ml.model import load_model
-
-# from typing import List, Union
+router = APIRouter(tags=["predict"])
 
 
-router = APIRouter(prefix="/predict", tags=["predict"])
-
-# class PredictionInput(BaseModel):
-#    data: List[dict]  # Each dict is a row of input data
-#    model_name: str
-
-
-@router.post("/", response_model=PredictionResponse)
-def predict(input_data: PredictionRequest):
+@router.post("/predict/", response_model=PredictionResponse)
+def predict_ml(req: PredictionRequest):
     """
-    Predict endpoint:
-    - Loads a saved Keras model by model_name
-    - Predicts on the given data
-    - Returns probabilities (float) and predicted labels (int)
+    Example: load model from saved_models, do predictions.
     """
-    # Attempt to load model
-    model = load_model(input_data.model_name)
+    # 1) Find the model file
+    model_base = os.path.join("saved_models", req.model_name)
+    possible_paths = [model_base, f"{model_base}.joblib", f"{model_base}.h5"]
+    found_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            found_path = path
+            break
+    if not found_path:
+        raise HTTPException(404, f"Model file not found: {model_base}")
 
-    if not model:
-        raise HTTPException(
-            status_code=404, detail=f"Model '{input_data.model_name}' not found."
-        )
+    # 2) Convert data to DF
+    df = pd.DataFrame([row.dict() for row in req.data])
 
-    # Convert list-of-dicts to a DataFrame
-    df = pd.DataFrame(input_data.data)
-    # Convert List[RowData] to a list of dicts, then to a DataFrame
-    row_dicts = [row.dict() for row in input_data.data]
-    df = pd.DataFrame(row_dicts)
+    # 3) If .joblib => scikit or KMeans or RF...
+    if found_path.endswith(".joblib"):
+        model = joblib.load(found_path)
+        # Example: handle classification (predict_proba) or KMeans
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(df)
+            # If binary classification => second col
+            if probs.shape[1] == 1:
+                probabilities = probs.flatten().tolist()
+            else:
+                probabilities = probs[:, 1].tolist()
+            preds = model.predict(df).tolist()
+        else:
+            preds = model.predict(df).tolist()
+            probabilities = [0.0] * len(preds)
+        return {"predictions": preds, "probabilities": probabilities}
 
-    # If the DataFrame is empty or has no columns, return error
-    if df.empty:
-        raise HTTPException(status_code=400, detail="No data provided for prediction.")
+    # 4) If .h5 => TF model
+    elif found_path.endswith(".h5"):
+        tf_model = keras.models.load_model(found_path)
+        raw_preds = tf_model.predict(df.values).flatten()
+        preds = (raw_preds >= 0.5).astype(int).tolist()
+        probabilities = raw_preds.tolist()
+        return {"predictions": preds, "probabilities": probabilities}
 
-    # Model expects numeric inputs; if needed, handle them or throw error
-    # For now, let's assume the data is already numeric or valid
-
-    # Return raw probabilities
-    y_pred_probs = model.predict(df.values)
-    # Convert probabilities (binary classification) to label
-    y_pred_labels = (y_pred_probs >= 0.5).astype(int).flatten().tolist()
-
-    # Flatten probabilities to normal Python list of floats
-    y_pred_probs_list = y_pred_probs.flatten().tolist()
-
-    return PredictionResponse(
-        predictions=y_pred_labels, probabilities=y_pred_probs_list
-    )
+    else:
+        raise HTTPException(400, f"Unknown extension in {found_path}")
