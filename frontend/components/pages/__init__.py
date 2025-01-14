@@ -5,6 +5,7 @@ from . import (
     model_metrics,
     predict_page,
     register,
+    train_model,
     upload_data,
     user_profile,
 )
@@ -18,4 +19,5 @@ __all__ = [
     "generate_data",
     "predict_page",
     "model_metrics",
+    "train_model",
 ]

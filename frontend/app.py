@@ -7,6 +7,7 @@ from components.pages import (
     model_metrics,
     predict_page,
     register,
+    train_model,
     upload_data,
     user_profile,
 )
@@ -22,9 +23,10 @@ def main():
             "Upload Data": upload_data,
             "Generate Data": generate_data,
             "Data Visualization": data_visualization,
-            "User Profile": user_profile,
+            "Train Model": train_model,
             "Make Predictions": predict_page,
             "Model Metrics": model_metrics,
+            "User Profile": user_profile,
         }
 
     # Show the navbar
