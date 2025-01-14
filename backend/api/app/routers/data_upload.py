@@ -2,6 +2,7 @@ import os
 import shutil
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -27,18 +28,22 @@ def sanitize_filename(filename: str) -> str:
 
 
 def save_file(
-    file: UploadFile, dataset_name: str = None, overwrite: bool = False
+    file: UploadFile, dataset_name: Optional[str] = None, overwrite: bool = False
 ) -> str:
-    """Save an uploaded file and return its stored file name."""
+    """
+    Save an uploaded file and return its stored file name.
+    If a file with the same name already exists and `overwrite` is False,
+    raise HTTPException(400).
+    """
     original_filename = sanitize_filename(file.filename)
     file_extension = os.path.splitext(original_filename)[1]
 
+    # Decide the final file name
     if dataset_name:
-        # Use the dataset name as the file name
         base_name = sanitize_filename(dataset_name)
         file_name = f"{base_name}{file_extension}"
     else:
-        # Use the original file name
+        # If no name is provided, use the original file name
         file_name = original_filename
 
     file_path = os.path.join(UPLOADS_DIR, file_name)
@@ -54,13 +59,13 @@ def save_file(
                     detail=f"Failed to overwrite existing file: {str(e)}",
                 )
         else:
-            # Append a unique suffix to avoid duplicates
-            unique_suffix = uuid.uuid4().hex[:8]
-            file_name = (
-                f"{os.path.splitext(file_name)[0]}_{unique_suffix}{file_extension}"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A dataset with this file name already exists. "
+                "Use `overwrite=true` if you want to replace it.",
             )
-            file_path = os.path.join(UPLOADS_DIR, file_name)
 
+    # Save the new or overwritten file
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
@@ -71,33 +76,38 @@ def save_file(
     "/upload",
     response_model=schemas.DatasetRead,
     summary="Upload a dataset file",
-    description="Upload a CSV or TXT file and store metadata in the database.",
+    description="Upload a CSV file and store metadata in the database.",
     dependencies=[Depends(RoleChecker(["admin", "user"]))],
 )
 def upload_dataset(
-    name: str = Form(...),
+    name: Optional[str] = Form(None),
     file: UploadFile = File(...),
     overwrite: bool = Form(False),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    """
+    Handle the upload of a CSV file. If 'name' is not provided,
+    the original file's name (without extension) is used as the dataset name.
+    """
     if not file:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No file uploaded.",
         )
 
-    if file.content_type not in ["text/csv", "application/vnd.ms-excel", "text/plain"]:
+    # Restrict to CSV uploads
+    if file.content_type not in ["text/csv", "application/vnd.ms-excel"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type. Only CSV or TXT files are allowed.",
+            detail="Invalid file type. Only CSV files are allowed.",
         )
 
-    # If no dataset name is provided, use the original file name without extension
+    # If no dataset name is provided, use the original file name (stripped extension)
     if not name:
         name = os.path.splitext(file.filename)[0]
 
-    # Save the file
+    # Attempt to save the file
     try:
         file_name = save_file(file, dataset_name=name, overwrite=overwrite)
     except HTTPException as e:
@@ -108,7 +118,7 @@ def upload_dataset(
             detail=f"Failed to save file: {str(e)}",
         )
 
-    # Check if a dataset with the same file_name exists
+    # Check if a dataset with the same file_name already exists in the DB
     existing_dataset = (
         db.query(models.Dataset).filter(models.Dataset.file_name == file_name).first()
     )
@@ -122,10 +132,12 @@ def upload_dataset(
             db.refresh(existing_dataset)
             dataset = existing_dataset
         else:
-            # This should not happen due to unique constraint and overwrite handling
+            # Should not happen if we already raised HTTP 400 in `save_file`,
+            # but just to be safe:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Dataset with this file name already exists.",
+                detail="A dataset with this file name already exists. "
+                "Use `overwrite=true` if you want to replace it.",
             )
     else:
         # Create a new dataset entry in the database
@@ -133,6 +145,7 @@ def upload_dataset(
             name=name,
             file_name=file_name,
             uploaded_at=datetime.utcnow(),
+            user_id=current_user.id,
         )
         db.add(dataset)
         db.commit()
