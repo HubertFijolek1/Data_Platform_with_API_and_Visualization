@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, validator
 
 # Assuming you have a saved PyTorch model
-from .ml.pytorch_model import SimplePyTorchModel  # Import your PyTorch model class
+from .ml.pytorch_model import SimplePyTorchModel  # Import my PyTorch model class
 
 # Use an environment variable to specify the model directory.
 # This makes it easier to change without modifying the code.
@@ -33,9 +33,11 @@ else:
 app = FastAPI()
 
 # Add new routers
-from app.routers import train
+from app.routers import predict2, train, train2
 
 app.include_router(train.router)
+app.include_router(train2.router)
+app.include_router(predict2.router)
 
 
 # Example input data schema

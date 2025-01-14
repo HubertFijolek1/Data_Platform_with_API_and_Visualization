@@ -54,10 +54,11 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+
+app.include_router(data_upload_router)
 app.include_router(data_router)
 app.include_router(ml_ops_router)
 app.include_router(data_generator_router)
-app.include_router(data_upload_router)
 
 uploads_dir = os.path.join(os.getcwd(), "uploads")
 os.makedirs(uploads_dir, exist_ok=True)  # Creates the directory if it doesn't exist
