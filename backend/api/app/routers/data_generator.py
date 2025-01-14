@@ -5,11 +5,13 @@ from typing import Callable, Dict, List
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
+from psycopg2 import IntegrityError
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import SessionLocal
+from ..routers.auth import get_current_user
 from ..utils.generators import (
     generate_account_number,
     generate_admission_date,
@@ -229,7 +231,11 @@ COLUMN_GENERATORS: Dict[str, Callable[[int], List]] = {
     response_model=schemas.DatasetRead,
     dependencies=[Depends(RoleChecker(["admin", "user"]))],
 )
-def generate_dataset(request: GenerateDatasetRequest, db: Session = Depends(get_db)):
+def generate_dataset(
+    request: GenerateDatasetRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     n_rows = request.n_rows
     selected_columns = request.columns
     dataset_name = request.dataset_name.strip()
@@ -299,14 +305,44 @@ def generate_dataset(request: GenerateDatasetRequest, db: Session = Depends(get_
             status_code=500, detail=f"Failed to save dataset to disk: {str(e)}"
         )
 
-    # Step 5: Create a dataset entry in the database
-    dataset = models.Dataset(
-        name=dataset_name,
-        file_name=final_file_name,
-        uploaded_at=pd.Timestamp.utcnow(),
+    # Step 5: Create or update DB entry
+    existing_dataset = (
+        db.query(models.Dataset).filter_by(file_name=final_file_name).first()
     )
-    db.add(dataset)
-    db.commit()
-    db.refresh(dataset)
 
-    return dataset
+    if existing_dataset:
+        if not overwrite:
+            # existed on disk, but concurrency or mismatch could cause it
+            raise HTTPException(
+                status_code=409,
+                detail=f"File '{final_file_name}' already exists in DB. Use `overwrite=true`.",
+            )
+
+        # Optionally check ownership (if you only want the same user or admin to overwrite)
+        if existing_dataset.user_id != current_user.id and current_user.role != "admin":
+            raise HTTPException(
+                403, "You do not have permission to overwrite this dataset."
+            )
+
+        existing_dataset.name = dataset_name
+        existing_dataset.uploaded_at = pd.Timestamp.utcnow()
+        db.commit()
+        db.refresh(existing_dataset)
+        return existing_dataset
+
+    else:
+        # Create a new dataset entry
+        new_dataset = models.Dataset(
+            name=dataset_name,
+            file_name=final_file_name,
+            uploaded_at=pd.Timestamp.utcnow(),
+            user_id=current_user.id,
+        )
+        db.add(new_dataset)
+        try:
+            db.commit()
+        except IntegrityError:
+            # if there's still a race condition
+            raise HTTPException(409, "A dataset with this file name already exists.")
+        db.refresh(new_dataset)
+        return new_dataset

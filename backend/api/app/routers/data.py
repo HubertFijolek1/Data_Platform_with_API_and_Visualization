@@ -89,43 +89,44 @@ def train_dataset_model(file_location: str, label_column: str, name: str):
         raise HTTPException(status_code=500, detail="Error during model training")
 
 
-# Refactored Routes
-@router.post(
-    "/upload",
-    response_model=schemas.DatasetRead,
-    summary="Upload a dataset file",
-    description="Upload a CSV or TXT file and store metadata in the database.",
-)
-def upload_dataset(
-    name: str = Form(...),
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-    train: bool = Form(False),
-    label_column: str = Form(None),
-):
-    if not file.filename.lower().endswith((".csv", ".txt")):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only CSV or TXT files are allowed.",
-        )
-
-    # Save file and create metadata
-    unique_id = str(uuid.uuid4())
-    file_name = save_file(file, unique_id)
-    dataset = models.Dataset(name=name, file_name=file_name)
-    db.add(dataset)
-    db.commit()
-    db.refresh(dataset)
-
-    # Train model if train=True
-    if train:
-        if not label_column:
-            raise HTTPException(
-                status_code=400, detail="label_column is required when train=True."
-            )
-        train_dataset_model(os.path.join(UPLOADS_DIR, file_name), label_column, name)
-    return dataset
+# # Refactored Routes
+# @router.post(
+#     "/upload",
+#     response_model=schemas.DatasetRead,
+#     summary="Upload a dataset file",
+#     description="Upload a CSV or TXT file and store metadata in the database.",
+# )
+# def upload_dataset(
+#     name: str = Form(...),
+#     file: UploadFile = File(...),
+#     db: Session = Depends(get_db),
+#     current_user: models.User = Depends(get_current_user),
+#     train: bool = Form(False),
+#     label_column: str = Form(None),
+# ):
+#     if not file.filename.lower().endswith((".csv", ".txt")):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Only CSV or TXT files are allowed.",
+#         )
+#
+#     # Save file and create metadata
+#     unique_id = str(uuid.uuid4())
+#     file_name = save_file(file, unique_id)
+#     dataset = models.Dataset(name=name, file_name=file_name)
+#     db.add(dataset)
+#     db.commit()
+#     db.refresh(dataset)
+#
+#     # Train model if train=True
+#     if train:
+#         if not label_column:
+#             raise HTTPException(
+#                 status_code=400, detail="label_column is required when train=True."
+#             )
+#         train_dataset_model(os.path.join(UPLOADS_DIR, file_name), label_column, name)
+#     return dataset
+#
 
 
 @router.get(
@@ -141,7 +142,12 @@ def get_all_datasets(
     current_user: models.User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    return db.query(models.Dataset).offset(skip).limit(page_size).all()
+
+    query = db.query(models.Dataset)
+    if current_user.role != "admin":
+        query = query.filter(models.Dataset.user_id == current_user.id)
+
+    return query.offset(skip).limit(page_size).all()
 
 
 @router.get(
@@ -169,18 +175,24 @@ def get_dataset(
     "/{dataset_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a dataset by ID",
-    description="Delete a specific dataset by its ID (admin only).",
+    description="Delete a specific dataset by its ID (owner or admin).",
 )
 def delete_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-    admin_only: bool = Depends(RoleChecker(["admin"])),
 ):
     dataset = get_dataset_or_404(dataset_id, db)
+
+    # If not admin and not the dataset owner => 403
+    if current_user.role != "admin" and dataset.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to perform this action"
+        )
+
     try:
         delete_file(dataset.file_name)
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete the file.",
