@@ -8,10 +8,9 @@ from ..headers import show_header
 
 def app():
     show_header(
-        "Make Predictions", "Use a trained model to make predictions on your data."
+        "Make Predictions", "Use a trained model (PyTorch, scikit-learn, TF, etc.)"
     )
 
-    # Check if user is authenticated
     if "auth_token" not in st.session_state:
         st.warning("You need to log in to make predictions.")
         show_footer()
@@ -20,96 +19,95 @@ def app():
     BACKEND_URL = st.secrets["BACKEND_URL"]
     headers = {"Authorization": f"Bearer {st.session_state['auth_token']}"}
 
-    # Select Model
     st.subheader("Select Model")
-    # Fetch available models (You might need to create an endpoint to list models)
-    # For simplicity, assuming a model name is known
-    model_name = st.text_input("Model Name", value="my_classification_model")
+    # 1) Grab model list from new endpoint, e.g. /ml/list2
+    #    or reuse /ml/models if you unify them
+    try:
+        resp = requests.get(f"{BACKEND_URL}/ml/models", headers=headers)
+        if resp.status_code != 200:
+            st.error("Failed to fetch models list.")
+            show_footer()
+            return
+        model_list = (
+            resp.json()
+        )  # e.g. ["pytorch_model", "LR_dataset_3", "tf_dataset_5", ...]
+        if not model_list:
+            st.info("No trained models found yet.")
+            show_footer()
+            return
+    except Exception as e:
+        st.error(f"Error fetching model list: {e}")
+        show_footer()
+        return
+
+    chosen_model = st.selectbox("Choose a Model Name", model_list)
 
     # Option 1: Single Data Point
-    st.subheader("Input Data for Single Prediction")
+    st.subheader("Single Data Point Prediction")
     with st.form("single_prediction_form"):
-        feature1 = st.number_input("Feature 1", value=0.0)
-        feature2 = st.number_input("Feature 2", value=0.0)
+        # Hardcoded for demonstration
+        feat1 = st.number_input("Feature 1", value=0.0)
+        feat2 = st.number_input("Feature 2", value=0.0)
         submit_single = st.form_submit_button("Predict Single")
 
     if submit_single:
-        # Prepare payload
         payload = {
-            "model_name": model_name,
-            "data": [{"feature1": feature1, "feature2": feature2}],
+            "model_name": chosen_model,
+            "data": [{"feature1": feat1, "feature2": feat2}],
         }
-
-        # Make API call to predict
-        with st.spinner("Making prediction..."):
+        with st.spinner("Predicting..."):
             try:
-                response = requests.post(
-                    f"{BACKEND_URL}/predict/", json=payload, headers=headers
+                r = requests.post(
+                    f"{BACKEND_URL}/predict2", json=payload, headers=headers
                 )
-                if response.status_code == 200:
-                    prediction = response.json()
+                if r.status_code == 200:
+                    out = r.json()
                     st.success("Prediction successful!")
-                    st.write(f"**Predicted Label:** {prediction['predictions'][0]}")
-                    st.write(
-                        f"**Prediction Probability:**"
-                        f" {prediction['probabilities'][0]:.2f}"
-                    )
+                    st.write("Predictions:", out.get("predictions"))
+                    st.write("Probabilities:", out.get("probabilities"))
                 else:
-                    st.error(
-                        f"Prediction failed:"
-                        f" {response.json().get('detail', 'Unknown error.')}"
-                    )
-            except requests.exceptions.ConnectionError:
-                st.error("Unable to connect to the backend. Please try again later.")
+                    st.error(f"Prediction failed: {r.text}")
             except Exception as e:
-                st.error(f"An unexpected error occurred: {e}")
+                st.error(f"Error: {e}")
 
-    # Option 2: Batch Predictions via File Upload
-    st.subheader("Batch Predictions via File Upload")
-    uploaded_file = st.file_uploader(
-        "Upload CSV file for batch predictions", type=["csv"]
-    )
-
-    if uploaded_file is not None:
+    # Option 2: Batch
+    st.subheader("Batch Prediction via CSV")
+    file_up = st.file_uploader("Upload CSV for batch predictions", type=["csv"])
+    if file_up:
         try:
-            data_df = pd.read_csv(uploaded_file)
-            st.write("Preview of Uploaded Data:")
-            st.dataframe(data_df.head())
+            batch_df = pd.read_csv(file_up)
+            st.write("Preview of uploaded data:")
+            st.dataframe(batch_df.head())
 
             if st.button("Make Batch Predictions"):
-                # Convert DataFrame to list of dicts
-                data_payload = data_df.to_dict(orient="records")
-
-                payload = {"model_name": model_name, "data": data_payload}
-
-                with st.spinner("Making batch predictions..."):
-                    response = requests.post(
-                        f"{BACKEND_URL}/predict/", json=payload, headers=headers
+                payload = {
+                    "model_name": chosen_model,
+                    "data": batch_df.to_dict(orient="records"),
+                }
+                with st.spinner("Predicting in batch..."):
+                    r = requests.post(
+                        f"{BACKEND_URL}/predict2", json=payload, headers=headers
                     )
-                    if response.status_code == 200:
-                        prediction = response.json()
-                        predictions = prediction["predictions"]
-                        probabilities = prediction["probabilities"]
-                        results_df = data_df.copy()
-                        results_df["Predicted Label"] = predictions
-                        results_df["Prediction Probability"] = probabilities
-                        st.success("Batch prediction successful!")
-                        st.write("Prediction Results:")
-                        st.dataframe(results_df)
-                        # Optionally, allow users to download the results
-                        csv = results_df.to_csv(index=False)
+                    if r.status_code == 200:
+                        out = r.json()
+                        preds = out.get("predictions", [])
+                        probs = out.get("probabilities", [])
+                        res_df = batch_df.copy()
+                        res_df["Predicted"] = preds
+                        res_df["Prob"] = probs
+                        st.success("Batch prediction done!")
+                        st.dataframe(res_df.head())
+                        # Download option
+                        csv_data = res_df.to_csv(index=False)
                         st.download_button(
-                            label="Download Predictions as CSV",
-                            data=csv,
+                            "Download CSV predictions",
+                            data=csv_data,
                             file_name="predictions.csv",
                             mime="text/csv",
                         )
                     else:
-                        st.error(
-                            f"Batch prediction failed:"
-                            f" {response.json().get('detail', 'Unknown error.')}"
-                        )
+                        st.error(f"Prediction failed: {r.text}")
         except Exception as e:
-            st.error(f"Error processing the uploaded file: {e}")
+            st.error(f"Error reading file: {e}")
 
     show_footer()
