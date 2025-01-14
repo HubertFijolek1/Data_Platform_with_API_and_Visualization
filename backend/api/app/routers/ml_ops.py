@@ -93,17 +93,16 @@ def get_model_performance(model_name: str, version: str = "v1"):
 @router.get("/models", response_model=List[str], tags=["ml_ops"])
 def list_models(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     """
-    List all saved models.
+    Return all .joblib and .h5 files from saved_models directory
+    so the user can pick them in the UI.
     """
     saved_models_dir = "saved_models"
     if not os.path.exists(saved_models_dir):
         return []
-    model_names = [
-        name
-        for name in os.listdir(saved_models_dir)
-        if os.path.isdir(os.path.join(saved_models_dir, name))
-    ]
-    return model_names
+    all_files = os.listdir(saved_models_dir)
+    # you might only return .joblib / .h5
+    model_files = [f for f in all_files if (f.endswith(".joblib") or f.endswith(".h5"))]
+    return model_files
 
 
 @router.get("/metrics/{model_name}/{version}", response_model=dict, tags=["ml_ops"])
