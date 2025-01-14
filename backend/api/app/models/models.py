@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, Integer, String, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy.orm import relationship
 
 from ..database import Base
 
@@ -20,3 +21,5 @@ class Dataset(Base):
     name = Column(String, nullable=False)
     file_name = Column(String, unique=True, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    owner = relationship("User")
