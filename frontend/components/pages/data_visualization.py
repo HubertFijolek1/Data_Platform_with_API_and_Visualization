@@ -60,7 +60,8 @@ def app():
             return
 
         st.write(f"### Preview of {selected_dataset}")
-        st.dataframe(data.head())
+        # Show entire DataFrame in a scrollable table:
+        st.dataframe(data, use_container_width=True)
 
         # ----------------------------------------------------------------------
         # Generate and show recommended visualizations
@@ -68,7 +69,7 @@ def app():
         recs = recommend_visualizations(data)
 
         if not recs:
-            st.write("No specific chart recommendations.py found for this dataset.")
+            st.write("No specific chart recommendations found for this dataset.")
         else:
             st.write("### Recommended Visualizations")
             for i, rec in enumerate(recs):
