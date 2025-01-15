@@ -35,9 +35,9 @@ app = FastAPI()
 # Add new routers
 from app.routers import predict2, train, train2
 
-app.include_router(train.router)
 app.include_router(train2.router)
 app.include_router(predict2.router)
+app.include_router(train.router)
 
 
 # Example input data schema
