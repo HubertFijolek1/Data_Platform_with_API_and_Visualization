@@ -20,9 +20,11 @@ def show_navbar():
             "Upload Data",
             "Generate Data",
             "Data Visualization",
-            "User Profile",
+            "Group & Aggregate",
+            "Train & Select Model",
             "Make Predictions",
             "Model Metrics",
+            "User Profile",
         ]
         default_page = "Upload Data"
     else:
