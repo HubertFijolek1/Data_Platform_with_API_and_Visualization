@@ -1,6 +1,7 @@
 import streamlit as st
 from components.navbar import show_navbar
 from components.pages import (
+    data_grouping,
     data_visualization,
     generate_data,
     login,
@@ -24,6 +25,7 @@ def main():
             "Upload Data": upload_data,
             "Generate Data": generate_data,
             "Data Visualization": data_visualization,
+            "Group & Aggregate": data_grouping,
             "Train & Select Model": train_and_model_selection,
             "Make Predictions": predict_page,
             "Model Metrics": model_metrics,
