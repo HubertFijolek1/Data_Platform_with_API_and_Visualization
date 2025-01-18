@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelEncoder  # --- NEW CODE ---
 from tensorflow import keras
 
 router = APIRouter(prefix="/ml", tags=["ml_ops"])
@@ -18,6 +19,19 @@ class Train2Request(BaseModel):
     label_column: str
     algorithm: str
     hyperparams: dict = {}
+
+
+def encode_text_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert all object/string columns in df to numeric via LabelEncoder.
+    For large or purely free-text columns, consider a more robust approach.
+    """
+    text_cols = df.select_dtypes(include=["object", "string"]).columns
+    for col in text_cols:
+        le = LabelEncoder()
+        # Convert column to string just in case it has mixed types
+        df[col] = le.fit_transform(df[col].astype(str))
+    return df
 
 
 @router.post("/train2")
@@ -37,6 +51,9 @@ def train_model_any(request: Train2Request):
         raise HTTPException(400, detail="Dataset is empty")
 
     algo = request.algorithm.lower()
+
+    # Encode all object/string columns to numeric so scikit-learn won't crash.
+    df = encode_text_columns(df)
 
     # ----- SUPERVISED (Classification) -----
     if algo in ["logisticregression", "randomforestclassifier"]:
@@ -71,7 +88,7 @@ def train_model_any(request: Train2Request):
     elif algo == "kmeans":
         n_clusters = int(request.hyperparams.get("n_clusters", 2))
         km = KMeans(n_clusters=n_clusters)
-        km.fit(df)  # or fit on X = ...
+        km.fit(df)  # KMeans will also fail if it sees strings, so label-encoding helps
         model_filename = f"kmeans_{os.path.basename(request.dataset_path)}.joblib"
         os.makedirs("saved_models", exist_ok=True)
         joblib.dump(km, os.path.join("saved_models", model_filename))
