@@ -20,16 +20,17 @@ def test_create_user(mock_db_session):
         password="unittest_password",
     )
 
-    # Mock the session's add, commit, refresh
+    # Mock session
     mock_db_session.add = MagicMock()
     mock_db_session.commit = MagicMock()
     mock_db_session.refresh = MagicMock()
 
     created_user = create_user(mock_db_session, user_in)
 
-    assert created_user.username == user_in.username
-    assert created_user.email == user_in.email
-    assert pwd_context.verify("unittest_password", created_user.hashed_password)
+    assert created_user.username == "unittest_user"
+    assert created_user.email == "unittest@example.com"
+    # Check password hashing
+    assert verify_password("unittest_password", created_user.hashed_password)
 
 
 def test_verify_password():
