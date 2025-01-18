@@ -15,19 +15,14 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Add the project root to sys.path
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../.."))
-sys.path.insert(0, PROJECT_ROOT)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
 
 @pytest.fixture(scope="session", autouse=True)
 def load_env():
     """
     Fixture to load environment variables from the root .env file before any tests run.
     """
-    env_path = os.path.join(PROJECT_ROOT, ".env")
+    # Adjust path to your actual .env if needed
+    env_path = os.path.join(os.path.dirname(__file__), "../../../.env")
     load_dotenv(dotenv_path=env_path)
 
 
@@ -36,8 +31,9 @@ def create_test_database():
     """
     Fixture to create the test database before any tests run.
     """
-    # Run the database creation script
-    script_path = os.path.join(PROJECT_ROOT, "scripts", "create_test_db.py")
+    script_path = os.path.join(
+        os.path.dirname(__file__), "../../scripts/create_test_db.py"
+    )
     subprocess.run([sys.executable, script_path], check=True)
     yield
     # Teardown: Drop the test database after tests
@@ -45,12 +41,12 @@ def create_test_database():
         "TEST_DATABASE_URL",
         "postgresql://postgres:password@localhost:5432/data_db_test",
     )
-    url = urlparse.urlparse(TEST_DATABASE_URL)
-    dbname = url.path[1:]
-    user = url.username
-    password = url.password
-    host = url.hostname
-    port = url.port
+    parsed = urlparse(TEST_DATABASE_URL)
+    dbname = parsed.path[1:]
+    user = parsed.username
+    password = parsed.password
+    host = parsed.hostname
+    port = parsed.port
 
     try:
         conn = psycopg2.connect(
@@ -75,13 +71,13 @@ def db_engine():
     engine = create_engine(TEST_DATABASE_URL)
 
     # Apply Alembic migrations
-    alembic_cfg = Config(os.path.join(PROJECT_ROOT, "alembic.ini"))
+    alembic_cfg = Config(
+        os.path.join(os.path.dirname(__file__), "../../../alembic.ini")
+    )
     alembic_cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
     command.upgrade(alembic_cfg, "head")
 
     yield engine
-
-    # Teardown: Drop all tables (handled in create_test_database fixture)
 
 
 @pytest.fixture(scope="session")
@@ -96,7 +92,10 @@ def db_session(db_engine):
 
 @pytest.fixture(scope="session")
 def client(db_session):
-    # Override the get_db dependency to use the testing session
+    """
+    Provide a FastAPI test client, overriding the DB dependency with our test session.
+    """
+
     def override_get_db():
         try:
             yield db_session
@@ -111,8 +110,11 @@ def client(db_session):
 
 @pytest.fixture
 def auth_token(client: TestClient):
-    # Register a test user
-    response = client.post(
+    """
+    Create a user + login to produce a Bearer token for tests.
+    """
+    # Register user
+    reg_resp = client.post(
         "/auth/register",
         json={
             "username": "testuser",
@@ -120,12 +122,12 @@ def auth_token(client: TestClient):
             "password": "testpassword",
         },
     )
-    assert response.status_code == 200
+    assert reg_resp.status_code == 200, reg_resp.text
 
-    # Login the test user
-    response = client.post(
+    # Login
+    login_resp = client.post(
         "/auth/login",
         json={"email": "testuser@example.com", "password": "testpassword"},
     )
-    assert response.status_code == 200
-    return response.json()["access_token"]
+    assert login_resp.status_code == 200, login_resp.text
+    return login_resp.json()["access_token"]
