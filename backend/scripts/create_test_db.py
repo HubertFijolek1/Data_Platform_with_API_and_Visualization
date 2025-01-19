@@ -1,10 +1,34 @@
 import os
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import subprocess
+import sys
 import urllib.parse as urlparse
 
+import psycopg2
+import pytest
+from app.database import get_db
+from app.main import app
+from dotenv import load_dotenv
+from fastapi.testclient import TestClient
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
+
+@pytest.fixture(scope="session", autouse=True)
 def create_test_database():
+    """
+    Fixture to create the test database before any tests run.
+    """
+    # Absolute path inside the container
+    script_path = "/app/scripts/create_test_db.py"
+
+    # Ensure the script exists
+    if not os.path.exists(script_path):
+        raise FileNotFoundError(f"Database creation script not found at {script_path}")
+
+    # Run the script
+    subprocess.run([sys.executable, script_path], check=True)
+
     # Fetch the test database URL from environment variables
     TEST_DATABASE_URL = os.getenv(
         "TEST_DATABASE_URL",
