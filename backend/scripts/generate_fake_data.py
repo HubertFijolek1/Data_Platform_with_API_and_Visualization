@@ -1,7 +1,8 @@
-from faker import Faker
-import pandas as pd
-import os
 import argparse
+import os
+
+import pandas as pd
+from faker import Faker
 
 
 def generate_users(n=100):
