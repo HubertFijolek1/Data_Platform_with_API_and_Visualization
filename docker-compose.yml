@@ -11,6 +11,7 @@ services:
       - ./frontend:/app
     depends_on:
       - backend-api
+      - backend-ml
 
   backend-api:
     build:
@@ -20,29 +21,20 @@ services:
       - ./backend/.env
     depends_on:
       - db
+      - backend-ml
     volumes:
-    - ./backend/uploads:/app/uploads
+      - ./backend/uploads:/app/uploads
+      - ./backend/saved_models:/app/saved_models
+
     ports:
       - "8000:8000"
     command: >
       sh -c "
-      alembic upgrade head &&
+      echo 'Listing directory structure...' &&
+      ls -laR /app &&
+      pytest /app/tests &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000
       "
-
-  backend-api-test:
-    build:
-      context: ./backend
-      dockerfile: api/Dockerfile
-    env_file:
-      - ./backend/.env
-    volumes:
-      - ./backend/uploads:/app/uploads
-    depends_on:
-      - db
-      - backend-ml
-      - backend-api
-    command: ["pytest", "/app/tests"]
 
   backend-ml:
     build:
@@ -52,6 +44,8 @@ services:
       - "8001:8000"
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./backend/saved_models:/app/saved_models
+
     depends_on:
       - db
     healthcheck:
@@ -59,6 +53,13 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    command: >
+      sh -c "
+      echo 'Listing directory structure...' &&
+      ls -laR /app &&
+      pytest /app/tests &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
 
   db:
     image: postgres:13
