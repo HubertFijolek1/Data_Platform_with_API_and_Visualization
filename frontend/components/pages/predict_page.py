@@ -19,20 +19,42 @@ def app():
     BACKEND_URL = st.secrets["BACKEND_URL"]
     headers = {"Authorization": f"Bearer {st.session_state['auth_token']}"}
 
+    # --------------------------------------------------------------------
+    # ADDED EXPLANATIONS: Provide basic instructions on how to use the page
+    # --------------------------------------------------------------------
+    st.markdown(
+        """
+    ### How to Use This Page
+
+    **1. Select a trained model** (e.g., logistic regression, random forest, etc.) from the dropdown below.
+    - If no models appear, you may need to go to **Train & Select Model** first or ensure a saved model is present.
+
+    **2. Make a single prediction** by manually entering a couple of numeric features (like feature1, feature2).
+    - Depending on how the model was trained, these inputs should match the model's expected features.
+
+    **3. (Optional) Upload a CSV for batch predictions** if you have multiple rows of data.
+    - The CSV should include columns named exactly as the model expects (e.g., feature1, feature2).
+    - The platform will apply the model to every row in that CSV.
+
+    **4. View the resulting predictions** and download them if you like (CSV).
+    - For classification models, you may also see **probabilities** (model confidence).
+    - For clustering or other unsupervised tasks, probabilities may be zero.
+
+    **Important**: The features you input here must match the features used during training. For example, if you trained a model with columns `[feature1, feature2, ..., featureN]`, you need to supply the same set of features.
+    """
+    )
+
     st.subheader("Select Model")
-    # 1) Grab model list from new endpoint, e.g. /ml/list2
-    #    or reuse /ml/models if you unify them
     try:
+        # Get list of trained models
         resp = requests.get(f"{BACKEND_URL}/ml/models", headers=headers)
         if resp.status_code != 200:
             st.error("Failed to fetch models list.")
             show_footer()
             return
-        model_list = (
-            resp.json()
-        )  # e.g. ["pytorch_model", "LR_dataset_3", "tf_dataset_5", ...]
+        model_list = resp.json()  # e.g. ["LR_dataset1.joblib", "tf_dataset5.h5", ...]
         if not model_list:
-            st.info("No trained models found yet.")
+            st.info("No trained models found yet. Train a model first.")
             show_footer()
             return
     except Exception as e:
@@ -57,14 +79,19 @@ def app():
         }
         with st.spinner("Predicting..."):
             try:
+                # Hitting /predict2
                 r = requests.post(
-                    f"{BACKEND_URL}/predict2", json=payload, headers=headers
+                    f"{BACKEND_URL}/predict2",
+                    json=payload,
+                    headers=headers,
                 )
                 if r.status_code == 200:
                     out = r.json()
                     st.success("Prediction successful!")
-                    st.write("Predictions:", out.get("predictions"))
-                    st.write("Probabilities:", out.get("probabilities"))
+                    preds = out.get("predictions", [])
+                    probs = out.get("probabilities", [])
+                    st.write("**Predictions:**", preds)
+                    st.write("**Probabilities:**", probs)
                 else:
                     st.error(f"Prediction failed: {r.text}")
             except Exception as e:
@@ -86,7 +113,9 @@ def app():
                 }
                 with st.spinner("Predicting in batch..."):
                     r = requests.post(
-                        f"{BACKEND_URL}/predict2", json=payload, headers=headers
+                        f"{BACKEND_URL}/predict2",
+                        json=payload,
+                        headers=headers,
                     )
                     if r.status_code == 200:
                         out = r.json()
@@ -97,6 +126,7 @@ def app():
                         res_df["Prob"] = probs
                         st.success("Batch prediction done!")
                         st.dataframe(res_df.head())
+
                         # Download option
                         csv_data = res_df.to_csv(index=False)
                         st.download_button(
