@@ -21,6 +21,7 @@ COPY api/entrypoint.sh /app/entrypoint.sh
 COPY alembic.ini /app/alembic.ini
 COPY alembic_migrations /app/alembic_migrations
 COPY api/tests /app/tests
+COPY scripts /app/scripts
 
 ENV PYTHONPATH=/app
 
@@ -46,9 +47,8 @@ COPY --from=builder /app/app /app/app
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
 COPY --from=builder /app/alembic.ini /app/alembic.ini
 COPY --from=builder /app/alembic_migrations /app/alembic_migrations
-
-# Copy the tests directory if needed
 COPY --from=builder /app/tests /app/tests
+COPY --from=builder /app/scripts /app/scripts
 
 # Make entrypoint.sh executable
 RUN chmod +x /app/entrypoint.sh
