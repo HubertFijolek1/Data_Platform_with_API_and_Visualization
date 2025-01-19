@@ -11,73 +11,97 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Install docker-compose
-      run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
 
-    - name: Install dependencies (backend)
-      working-directory: ./backend
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
+      # Optionally install Python deps for static checks (not strictly required if you only run inside Docker)
+      - name: Install dependencies (backend)
+        working-directory: ./backend
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Install dependencies (frontend)
-      working-directory: ./frontend
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies (frontend)
+        working-directory: ./frontend
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Create .env file for backend
-      run: |
-        cat <<EOF > backend/.env
-        DATABASE_URL=${{ secrets.DATABASE_URL }}
-        TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}
-        SECRET_KEY=${{ secrets.SECRET_KEY }}
-        ALGORITHM=${{ secrets.ALGORITHM }}
-        ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
-        BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}
-        EOF
+      - name: Create .env file for backend
+        run: |
+          cat <<EOF > backend/.env
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          ALGORITHM=${{ secrets.ALGORITHM }}
+          ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
+          BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}
+          EOF
 
-    - name: Build Docker containers
-      run: |
-        docker-compose build
+      - name: Build Docker containers
+        run: |
+          docker-compose build
 
-    - name: Run Tests (backend-api)
-      run: |
-        docker-compose run backend-api-test
+      # Start containers in background so we can run tests & lint
+      - name: Start Containers
+        run: docker-compose up -d db backend-api backend-ml
 
-    - name: Lint with flake8 (backend)
-      run: docker-compose exec backend-api flake8 .
+      - name: Wait for Services
+        run: |
+          # Simple wait loop for Postgres & the API containers to become healthy
+          # (increase attempts/interval if your migrations or startup are slow)
+          for i in {1..30}; do
+            if docker-compose ps | grep \(healthy\) ; then
+              echo "Containers are healthy!"
+              break
+            fi
+            echo "Waiting for containers to be healthy..."
+            sleep 5
+          done
 
-    - name: Check Streamlit app availability
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y curl
+      - name: Run Tests (backend-api)
+        run: |
+          # Run the FastAPI tests
+          docker-compose exec backend-api pytest /app/tests
 
-        # Try to connect to the Streamlit app for up to 60 seconds
-        max_attempts=60
-        attempt=1
-        until curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8501 | grep 200 || [ $attempt -eq $max_attempts ]; do
-          echo "Attempt $attempt failed. Waiting for Streamlit to become available..."
-          attempt=$((attempt + 1))
-          sleep 1
-        done
+      - name: Run Tests (backend-ml)
+        run: |
+          # Run the ML container tests
+          docker-compose exec backend-ml pytest /app/tests
 
-        if [ $attempt -eq $max_attempts ]; then
-          echo "Streamlit app did not become available within the timeout period."
-          exit 1
-        else
-          echo "Streamlit app is available!"
-        fi
+      - name: Lint with flake8 (backend)
+        run: docker-compose exec backend-api flake8 .
+
+      - name: Check Streamlit app availability
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y curl
+
+          # Try to connect to the Streamlit app for up to 60 seconds
+          max_attempts=60
+          attempt=1
+          until curl -s -o /dev/null -w "%{http_code}" http://localhost:8501 | grep 200 || [ $attempt -eq $max_attempts ]; do
+            echo "Attempt $attempt failed. Waiting for Streamlit to become available..."
+            attempt=$((attempt + 1))
+            sleep 1
+          done
+
+          if [ $attempt -eq $max_attempts ]; then
+            echo "Streamlit app did not become available within the timeout."
+            exit 1
+          else
+            echo "Streamlit app is available!"
+          fi
