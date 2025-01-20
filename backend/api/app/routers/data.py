@@ -89,46 +89,6 @@ def train_dataset_model(file_location: str, label_column: str, name: str):
         raise HTTPException(status_code=500, detail="Error during model training")
 
 
-# # Refactored Routes
-# @router.post(
-#     "/upload",
-#     response_model=schemas.DatasetRead,
-#     summary="Upload a dataset file",
-#     description="Upload a CSV or TXT file and store metadata in the database.",
-# )
-# def upload_dataset(
-#     name: str = Form(...),
-#     file: UploadFile = File(...),
-#     db: Session = Depends(get_db),
-#     current_user: models.User = Depends(get_current_user),
-#     train: bool = Form(False),
-#     label_column: str = Form(None),
-# ):
-#     if not file.filename.lower().endswith((".csv", ".txt")):
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Only CSV or TXT files are allowed.",
-#         )
-#
-#     # Save file and create metadata
-#     unique_id = str(uuid.uuid4())
-#     file_name = save_file(file, unique_id)
-#     dataset = models.Dataset(name=name, file_name=file_name)
-#     db.add(dataset)
-#     db.commit()
-#     db.refresh(dataset)
-#
-#     # Train model if train=True
-#     if train:
-#         if not label_column:
-#             raise HTTPException(
-#                 status_code=400, detail="label_column is required when train=True."
-#             )
-#         train_dataset_model(os.path.join(UPLOADS_DIR, file_name), label_column, name)
-#     return dataset
-#
-
-
 @router.get(
     "/",
     response_model=List[schemas.DatasetRead],
