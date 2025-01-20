@@ -5,10 +5,8 @@ from components.pages import (
     data_visualization,
     generate_data,
     login,
-    model_metrics,
-    predict_page,
+    model_wizard,
     register,
-    train_and_model_selection,
     upload_data,
     user_profile,
 )
@@ -26,9 +24,7 @@ def main():
             "Generate Data": generate_data,
             "Data Visualization": data_visualization,
             "Group & Aggregate": data_grouping,
-            "Train & Select Model": train_and_model_selection,
-            "Make Predictions": predict_page,
-            "Model Metrics": model_metrics,
+            "Model Wizard": model_wizard,
             "User Profile": user_profile,
         }
 
