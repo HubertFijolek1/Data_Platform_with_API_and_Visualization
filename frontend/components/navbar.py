@@ -16,18 +16,18 @@ def show_navbar():
 
     # Determine available pages based on authentication
     if "auth_token" in st.session_state:
+        # Pages for logged-in users
         available_pages = [
             "Upload Data",
             "Generate Data",
             "Data Visualization",
             "Group & Aggregate",
-            "Train & Select Model",
-            "Make Predictions",
-            "Model Metrics",
+            "Model Wizard",
             "User Profile",
         ]
         default_page = "Upload Data"
     else:
+        # Pages for anonymous users
         available_pages = ["Login", "Register"]
         default_page = "Login"
 
@@ -40,21 +40,21 @@ def show_navbar():
     if "selected_page" not in st.session_state:
         st.session_state["selected_page"] = default_page
 
-    # Radio button selection tied directly to 'selected_page' via the 'key' parameter
+    # Radio button selection
     selection = st.sidebar.radio(
         "Go to",
         options=available_pages,
         index=available_pages.index(st.session_state["selected_page"])
         if st.session_state["selected_page"] in available_pages
         else 0,
-        key="selected_page",  # This ties the radio button's value to session_state["selected_page"]
+        key="selected_page",
     )
 
-    # Render the selected page based on the current selection
+    # Render the selected page
     page = st.session_state["PAGES"].get(selection)
     if page:
         page.app()
 
-    # Logout button logic using callback
+    # Logout button logic
     if "auth_token" in st.session_state:
         st.sidebar.button("Logout", on_click=logout_callback)
