@@ -23,44 +23,76 @@ def app():
 
     st.markdown("### Existing Files")
 
+    # ----------------------------------------------------------------------
+    # 1. Fetch Existing Datasets
+    # ----------------------------------------------------------------------
     try:
-        # Grabbing a large page_size up to 100 as per backend limit
         response = requests.get(
             f"{BACKEND_URL}/data/?page=1&page_size=100", headers=headers
         )
         if response.status_code == 200:
             existing_datasets = (
                 response.json()
-            )  # list of dicts: {id, name, file_name, uploaded_at, ...}
+            )  # list of dicts: [{id, name, file_name, ...}, ...]
             if existing_datasets:
-                for ds in existing_datasets:
-                    file_name = ds["file_name"]
-                    dataset_name = ds["name"]
-                    file_url = f"{BACKEND_URL}/uploads/{file_name}"
+                # Instead of listing them vertically, let's chunk them in groups of 3 columns
+                chunk_size = 3
+                for i in range(0, len(existing_datasets), chunk_size):
+                    row_datasets = existing_datasets[i : i + chunk_size]
+                    cols = st.columns(len(row_datasets))
 
-                    # Attempt to read CSV to get shape
-                    try:
-                        df = pd.read_csv(file_url)
-                        rows, cols = df.shape
-                        st.write(
-                            f"**{dataset_name}**  \n"
-                            f"File: `{file_name}`  \n"
-                            f"Rows: **{rows}**, Columns: **{cols}**"
-                        )
-                    except Exception as e:
-                        st.warning(f"Could not read '{file_name}': {e}")
+                    for col, ds in zip(cols, row_datasets):
+                        with col:
+                            file_name = ds["file_name"]
+                            dataset_name = ds["name"]
+                            dataset_id = ds["id"]
+                            file_url = f"{BACKEND_URL}/uploads/{file_name}"
+
+                            # Attempt to read CSV to get shape
+                            try:
+                                df = pd.read_csv(file_url)
+                                rows, cols_count = df.shape
+                                st.write(
+                                    f"**{dataset_name}**\n"
+                                    f"File: `{file_name}`\n"
+                                    f"Rows: **{rows}**, Columns: **{cols_count}**"
+                                )
+                            except Exception as e:
+                                st.warning(f"Could not read '{file_name}': {e}")
+
+                            # Delete button for each dataset
+                            delete_btn_label = f"Delete '{dataset_name}'"
+                            if st.button(delete_btn_label, key=f"delete_{dataset_id}"):
+                                delete_resp = requests.delete(
+                                    f"{BACKEND_URL}/data/{dataset_id}",
+                                    headers=headers,
+                                )
+                                if delete_resp.status_code == 204:
+                                    st.success(f"Dataset '{dataset_name}' deleted.")
+                                    st.rerun()
+                                else:
+                                    st.error(
+                                        f"Failed to delete dataset '{dataset_name}': "
+                                        f"{delete_resp.status_code}, {delete_resp.text}"
+                                    )
             else:
                 st.info("No datasets found.")
         else:
-            st.error(
-                f"Failed to fetch existing datasets: "
-                f"{response.json().get('detail', 'Unknown error.')}"
-            )
+            try:
+                # Attempt to parse error detail from JSON
+                detail = response.json().get("detail", "Unknown error.")
+            except:
+                # If the body isn't JSON
+                detail = response.text
+            st.error(f"Failed to fetch existing datasets: {detail}")
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching existing datasets: {e}")
 
     st.markdown("---")
 
+    # ----------------------------------------------------------------------
+    # 2. Dataset Types
+    # ----------------------------------------------------------------------
     dataset_types = {
         "User_Profiles": [
             "user_id",
@@ -197,7 +229,9 @@ def app():
         default=available_columns,
     )
 
-    # Generate dataset form
+    # ----------------------------------------------------------------------
+    # 3. Generate Dataset Form
+    # ----------------------------------------------------------------------
     with st.form("data_generator_form"):
         col1, col2 = st.columns([1, 2])
 
@@ -212,7 +246,7 @@ def app():
             dataset_name = st.text_input("Dataset Name", value=default_dataset_name)
 
             filename = st.text_input(
-                "File Name (Optional - if left blank, the dataset name will be used as the file name.)",
+                "File Name (Optional)",
                 value="",
                 help="If left blank, the dataset name will be used as the file name.",
             )
@@ -223,11 +257,13 @@ def app():
             )
 
         with col2:
-            st.write("")  # for spacing, or any extra fields as needed
+            st.write("")  # for spacing or any extra inputs
 
         submit = st.form_submit_button("Generate Dataset")
 
-    # When user clicks 'Generate Dataset'
+    # ----------------------------------------------------------------------
+    # 4. Handle dataset generation
+    # ----------------------------------------------------------------------
     if submit:
         if not selected_columns:
             st.error("Please select at least one column.")
@@ -256,9 +292,7 @@ def app():
                 if response.status_code == 200:
                     dataset = response.json()
                     st.success(f"Dataset '{dataset['name']}' generated successfully!")
-                    # Optionally, provide a download button if the backend returns the file content
-                    # Here, assuming the backend does not return the file content, just metadata
-                    # To download, the user can use the Existing Files section
+                    # Refresh the page to show the new file in "Existing Files"
                     st.rerun()
 
                 elif response.status_code == 401:
@@ -267,16 +301,21 @@ def app():
                     st.rerun()
 
                 elif response.status_code == 409:
-                    st.error(response.json().get("detail", "File already exists."))
+                    # Typically means file already exists
+                    detail_msg = response.json().get("detail", "File already exists.")
+                    st.error(detail_msg)
 
                 else:
-                    st.error(
-                        f"Failed to generate dataset: "
-                        f"{response.json().get('detail', 'Unknown error.')}"
-                    )
+                    # Attempt to parse any error details
+                    try:
+                        detail = response.json().get("detail", "Unknown error.")
+                    except:
+                        detail = response.text
+                    st.error(f"Failed to generate dataset: {detail}")
             except requests.exceptions.ConnectionError:
                 st.error("Unable to connect to the backend. Please try again later.")
             except Exception as e:
+                # Covers JSON decode errors, etc.
                 st.error(f"An unexpected error occurred: {e}")
 
     show_footer()
