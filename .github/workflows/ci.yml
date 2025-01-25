@@ -56,6 +56,12 @@ jobs:
           BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}
           EOF
 
+      - name: Create .env file for frontend
+        run: |
+          cat <<EOF > frontend/.env
+          BACKEND_URL=${{ secrets.FRONTEND_BACKEND_URL }}
+          ML_BACKEND_URL=${{ secrets.FRONTEND_ML_BACKEND_URL }}
+          EOF
       - name: Build Docker containers
         run: |
           docker-compose build
