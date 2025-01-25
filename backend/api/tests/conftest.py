@@ -35,10 +35,10 @@ def db_engine():
     engine = create_engine(TEST_DATABASE_URL)
 
     # Apply Alembic migrations
-    alembic_cfg = Config(
-        os.path.join(os.path.dirname(__file__), "../../../alembic.ini")
-    )
+    alembic_cfg = Config()
+    alembic_cfg.set_main_option("script_location", "/app/alembic_migrations")
     alembic_cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
+
     command.upgrade(alembic_cfg, "head")
 
     yield engine
