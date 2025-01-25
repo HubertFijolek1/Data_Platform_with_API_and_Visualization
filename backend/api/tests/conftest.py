@@ -31,9 +31,8 @@ def create_test_database():
     """
     Fixture to create the test database before any tests run.
     """
-    script_path = os.path.join(
-        os.path.dirname(__file__), "../../scripts/create_test_db.py"
-    )
+    script_path = "/app/scripts/create_test_db.py"
+
     subprocess.run([sys.executable, script_path], check=True)
     yield
     # Teardown: Drop the test database after tests
