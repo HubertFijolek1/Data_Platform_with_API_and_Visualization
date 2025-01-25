@@ -23,14 +23,19 @@ jobs:
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
 
-      # Optionally install Python deps for static checks (not strictly required if you only run inside Docker)
-      - name: Install dependencies (backend)
-        working-directory: ./backend
+      - name: Install dependencies (backend-api)
+        working-directory: ./backend/api
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
+              python -m venv .venv
+              source .venv/bin/activate
+              pip install --upgrade pip
+              pip install -r requirements.txt
+
+      - name: Install dependencies (backend-ml)
+        working-directory: ./backend/ml
+        run: |
+              source ../api/.venv/bin/activate
+              pip install -r requirements.txt
 
       - name: Install dependencies (frontend)
         working-directory: ./frontend
