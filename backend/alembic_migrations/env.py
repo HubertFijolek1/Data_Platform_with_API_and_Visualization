@@ -15,7 +15,7 @@ from app.database import Base
 from app.models.models import Dataset, User
 
 # Configure logging
-fileConfig(context.config.config_file_name)
+# fileConfig(context.config.config_file_name)
 
 # Set target_metadata for autogenerate
 target_metadata = Base.metadata
