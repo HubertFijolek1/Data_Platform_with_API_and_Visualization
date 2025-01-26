@@ -13,7 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 3) Install Docker Compose
       - name: Install docker-compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" \
