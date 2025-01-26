@@ -46,7 +46,6 @@ from ..utils.generators import (
     generate_extra_curricular,
     generate_gender,
     generate_generic,
-    generate_generic_id,
     generate_grade,
     generate_hashtags,
     generate_helpful_votes,
@@ -318,7 +317,7 @@ def generate_dataset(
                 detail=f"File '{final_file_name}' already exists in DB. Use `overwrite=true`.",
             )
 
-        # Optionally check ownership (if you only want the same user or admin to overwrite)
+        # check ownership
         if existing_dataset.user_id != current_user.id and current_user.role != "admin":
             raise HTTPException(
                 403, "You do not have permission to overwrite this dataset."

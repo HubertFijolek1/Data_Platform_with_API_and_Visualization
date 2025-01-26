@@ -1,24 +1,13 @@
 import os
-import uuid
 from typing import List
 
 import pandas as pd
-from fastapi import (
-    APIRouter,
-    Depends,
-    File,
-    Form,
-    HTTPException,
-    Query,
-    UploadFile,
-    status,
-)
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import SessionLocal
 from ..routers.auth import get_current_user
-from ..utils.role_checker import RoleChecker
 
 # Constants
 UPLOADS_DIR = "./uploads"
@@ -68,25 +57,6 @@ def get_dataset_or_404(dataset_id: int, db: Session) -> models.Dataset:
             detail=f"Dataset with id {dataset_id} not found.",
         )
     return dataset
-
-
-def train_model(df, label_column, epochs=5):
-    return 1
-
-
-def save_model(model, model_name):
-    return 1
-
-
-def train_dataset_model(file_location: str, label_column: str, name: str):
-    """Train a model using the dataset."""
-    try:
-        file_df = pd.read_csv(file_location)
-        model = train_model(file_df, label_column=label_column, epochs=5)
-        model_name = f"{name}_model"
-        save_model(model, model_name)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Error during model training")
 
 
 @router.get(
