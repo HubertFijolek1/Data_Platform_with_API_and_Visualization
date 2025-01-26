@@ -1,7 +1,4 @@
-from io import StringIO
-
 import pandas as pd
-import pytest
 import torch
 from app.app.ml.model import evaluate_model
 from app.app.ml.pytorch_model import train_pytorch_classifier

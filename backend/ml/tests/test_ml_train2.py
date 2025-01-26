@@ -1,7 +1,5 @@
 from io import StringIO
 
-import pytest
-
 
 def test_train2_logistic_regression_with_text_columns(client, auth_token):
     """

@@ -2,13 +2,12 @@ import os
 
 import joblib
 import pandas as pd
-import tensorflow as tf
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder  # --- NEW CODE ---
+from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
 
 router = APIRouter(prefix="/ml", tags=["ml_ops"])
