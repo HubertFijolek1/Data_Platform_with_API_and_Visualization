@@ -2,13 +2,10 @@ import os
 from typing import List
 
 import httpx
-import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
-
-# from ml.metrics_manager import get_metrics, save_metrics
 from ..models.models import Dataset
 from ..routers.auth import get_current_user
 

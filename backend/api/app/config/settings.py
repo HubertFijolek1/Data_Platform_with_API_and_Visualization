@@ -20,11 +20,6 @@ class Settings(BaseSettings):
 
     model_config = ConfigDict(env_file=".env")
 
-    # model_config = SettingsConfigDict(
-    #     env_file=os.path.join(os.path.dirname(__file__), "../../.env"),
-    #     extra="forbid",  # Ensures no unexpected fields are allowed
-    # )
-
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     def assemble_cors_origins(cls, v):
         logger.info(f"Received BACKEND_CORS_ORIGINS: {v}")
