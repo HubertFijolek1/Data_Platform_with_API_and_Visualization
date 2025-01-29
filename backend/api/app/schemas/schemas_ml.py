@@ -11,7 +11,6 @@ class RowData(BaseModel):
 
     feature1: float
     feature2: float
-    # e.g. categorical features stored as strings if model expects them encoded
 
 
 class PredictionRequest(BaseModel):

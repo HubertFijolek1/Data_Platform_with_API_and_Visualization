@@ -1,9 +1,6 @@
 import os
-from typing import List
 
-import pandas as pd
-import torch
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel, validator
 
 MODEL_DIR = os.getenv("MODEL_DIR", "saved_models/auto_trained_model/v1")
