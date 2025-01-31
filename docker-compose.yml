@@ -10,8 +10,10 @@ services:
     volumes:
       - ./frontend:/app
     depends_on:
-      - backend-api
-      - backend-ml
+      backend-api:
+        condition: service_healthy
+      backend-ml:
+        condition: service_healthy
 
   backend-api:
     build:
@@ -20,19 +22,21 @@ services:
     env_file:
       - ./backend/.env
     depends_on:
-      - db
-      - backend-ml
+      db:
+        condition: service_healthy
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/saved_models:/app/saved_models
-
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     command: >
       sh -c "
-      echo 'Listing directory structure...' &&
-      ls -laR /app &&
-      pytest /app/tests &&
+      alembic upgrade head &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000
       "
 
@@ -45,19 +49,16 @@ services:
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/saved_models:/app/saved_models
-
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
     command: >
       sh -c "
-      echo 'Listing directory structure...' &&
-      ls -laR /app &&
-      pytest /app/tests &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000
       "
 
@@ -65,16 +66,14 @@ services:
     image: postgres:13
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_DB: data_db
     volumes:
       - db-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
 
 volumes:
