@@ -1,7 +1,7 @@
 import os
 
 from fastapi import FastAPI
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 MODEL_DIR = os.getenv("MODEL_DIR", "saved_models/auto_trained_model/v1")
 MODEL_FILE = os.path.join(MODEL_DIR, "model_pt.pt")
@@ -19,7 +19,7 @@ class InputData(BaseModel):
     feature1: float
     feature2: float
 
-    @validator("*", pre=True)
+    @field_validator("*", mode="before")
     def convert_to_float(cls, value):
         if isinstance(value, str):
             try:
