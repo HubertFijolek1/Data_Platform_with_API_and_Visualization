@@ -15,11 +15,9 @@ app.include_router(train2.router)
 app.include_router(predict2.router)
 
 
-# Example input data schema
 class InputData(BaseModel):
     feature1: float
     feature2: float
-    # ... other features
 
     @validator("*", pre=True)
     def convert_to_float(cls, value):
